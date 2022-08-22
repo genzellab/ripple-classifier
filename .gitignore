@@ -132,5 +132,5 @@ dmypy.json
 
 #data location
 data/
-datasets/
+proc_data/
 
