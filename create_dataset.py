@@ -98,9 +98,10 @@ if __name__ == '__main__':
                 h.attrs['data_types'] = json.dumps(data_types)
                 h.close()
 # %%
-# print attributers
+# print attributes
 # h = h5py.File('proc_data/dataset_HPCpyra_ratID3.hdf5', 'r')
 # for k in h.attrs.keys():
 #     print(f"{k} => {h.attrs[k]}")
-# h['x'].shape
+# print(h['x'].shape)
 # h.close()
+

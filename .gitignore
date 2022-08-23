@@ -134,3 +134,6 @@ dmypy.json
 data/
 proc_data/
 
+#logs
+wandb/
+checkpoints/
