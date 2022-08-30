@@ -11,15 +11,19 @@ import pandas as pd
 from torchmetrics.functional import f1_score
 import torchmetrics
 
+
 class cnn_block(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dropout=0.0):
         super(cnn_block, self).__init__()
-        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, stride, padding)
+        self.conv = nn.Conv1d(in_channels, out_channels,
+                              kernel_size, stride, padding)
         self.bn = nn.BatchNorm1d(out_channels)
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, x):
-        return self.relu(self.bn(self.conv(x)))
+        return self.dropout(self.relu(self.bn(self.conv(x))))
+
 
 class HPCnet(pl.LightningModule):
     def __init__(self, hparams):
@@ -29,26 +33,33 @@ class HPCnet(pl.LightningModule):
 
         self.save_hyperparameters(hparams)
         self.num_classes = self.hparams.num_classes
-
+        num_channels = self.hparams.num_channels
+        kernels = [3, 6, 9, 12, 2]
+        strides = [1, 1, 2, 2, 2]
         layers = []
-        layers.append(cnn_block(8, 16, kernel_size=3, stride=1, padding=0))
-        layers.append(cnn_block(16, 32, kernel_size=6, stride=1, padding=0))
-        layers.append(cnn_block(32, 64, kernel_size=9, stride=2, padding=0))
-        layers.append(cnn_block(64, 128, kernel_size=12, stride=2, padding=0))
-        layers.append(cnn_block(128,256 , kernel_size=2, stride=2, padding=0))
-
+        layers.append(nn.BatchNorm1d(8))
+        layers.append(cnn_block(8, num_channels//2**(self.hparams.num_layers-1), kernel_size=kernels[0],
+                      stride=strides[0], padding=0, dropout=self.hparams.dropout))
+        for i in range(1, self.hparams.num_layers):
+            layer_multiplier = 2**(self.hparams.num_layers - i-1)
+            layers.append(
+                cnn_block(num_channels//2**(self.hparams.num_layers - i), num_channels//2**(self.hparams.num_layers - i-1),
+                          kernels[i], stride=strides[i], dropout=self.hparams.dropout/(i+1))
+            )
         self.net = nn.Sequential(*layers)
-        self.fc = nn.Linear(768, self.num_classes)
-        
-
+        x_size = torch.randn(1, 8, 60)
+        x_size = self.net(x_size)
+        x_size = x_size.view(x_size.size(0), -1)
+        self.fc = nn.Linear(x_size.size(1), self.num_classes)
 
     def forward(self, x):
         # for layer in self.net:
         #     print(x.shape)
         #     x = layer(x)
+        #     print(x.shape)
         x = self.net(x)
-        x = x.view(x.size(0), -1)
         # print(x.shape)
+        x = x.view(x.size(0), -1)
         return self.fc(x)
 
     def training_step(self, batch, batch_idx):
@@ -64,7 +75,7 @@ class HPCnet(pl.LightningModule):
         else:
             y_hat = batch_parts_outputs[0]
             y = batch_parts_outputs[1]
- 
+
         loss = F.cross_entropy(y_hat, y)
         y = y.detach()
         y_hat = y_hat.detach()
@@ -226,11 +237,8 @@ class HPCnet(pl.LightningModule):
                     n_ypred, n_y = output[metric_name]
                     y_pred = torch.cat((y_pred, n_ypred))
                     y = torch.cat((y, n_y))
-                conf_matrix = (F_m.confusion_matrix(
-                    y_pred.type(torch.ByteTensor),
-                    y.type(torch.ByteTensor),
-                    num_classes=self.num_classes,
-                ).cpu().numpy())
+                conf_matrix = torchmetrics.functional.confusion_matrix(y_pred.type(torch.ByteTensor), y.type(torch.ByteTensor),
+                                                                       num_classes=self.num_classes).cpu().numpy()
                 df = pd.DataFrame(data=y_pred, columns=["pred"])
                 df["true"] = y
 
@@ -239,14 +247,18 @@ class HPCnet(pl.LightningModule):
                     y_pred.type(torch.ByteTensor),
                     output_dict=True,
                 )
+                print(metrics.classification_report(
+                    y.type(torch.ByteTensor),
+                    y_pred.type(torch.ByteTensor),
+                ))
             else:
                 metric_total = 0
                 for output in outputs:
                     metric_value = output[metric_name]
 
-                    # reduce manually when using dp
-                    if self.trainer.use_dp or self.trainer.use_ddp2:
-                        metric_value = metric_value.mean()
+                    # # reduce manually when using dp
+                    # if self.trainer.use_dp or self.trainer.use_ddp2:
+                    #     metric_value = metric_value.mean()
 
                     metric_total += metric_value
 
@@ -286,21 +298,23 @@ class HPCnet(pl.LightningModule):
             weight_decay=self.hparams.weight_decay,
         )
 
-
     @staticmethod
     def add_model_specific_args(parent_parser):
         """
         Specify the hyperparams for this LightningModule
         """
-        # OPTIMIZER ARGS
         parser = ArgumentParser(parents=[parent_parser])
-        parser.add_argument("--learning_rate", default=0.001, type=float)
-        parser.add_argument("--batch_size", default=32, type=int)
-        parser.add_argument("--weight_decay", default=0.025409, type=float)
+        # Architecture params
+        parser.add_argument("--num_layers", default=2, type=int)
+        parser.add_argument("--num_channels", default=64, type=int)
+        parser.add_argument("--dropout", default=0.2, type=float)
 
+        # OPTIMIZER ARGS
+        parser.add_argument("--learning_rate", default=0.000281, type=float)
+        parser.add_argument("--weight_decay", default=0.00608, type=float)
 
         # training specific (for this model)
         parser.add_argument("--data-type", type=str, default='HPC',
-                        help='Possible values are HPC, PFC, all')
+                            help='Possible values are HPC, PFC, all')
 
         return parser
