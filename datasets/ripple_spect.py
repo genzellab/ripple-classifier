@@ -26,7 +26,7 @@ class RippleSpectDataset(Dataset):
         self.num_classes = num_classes
         self.transforms = transforms
         self.data_df = pd.DataFrame(os.listdir(
-            './proc_data/'), columns=['filename'])
+            data_dir), columns=['filename'])
         if data_type == "HPC":
             self.data_df = self.data_df[self.data_df.filename.str.contains(
                 'HPC')]
@@ -90,7 +90,7 @@ class RippleSpectDataset(Dataset):
         self.y = None
         self.metada = None
         for idx, row in self.data_df.iterrows():
-            h = h5py.File('proc_data/{}'.format(row.filename), 'r')
+            h = h5py.File(os.path.join(data_dir, row.filename), 'r')
             if self.metada is None:
                 self.metada = dict(h.attrs.items())
             data = np.array(h['x'])
@@ -100,6 +100,7 @@ class RippleSpectDataset(Dataset):
                 (self.X, torch.tensor(data)))
             self.y = torch.tensor(label) if self.y is None else torch.cat(
                 (self.y, torch.tensor(label)))
+            h.close()
         self.X = self.X.real
         if self.num_classes == 2:
             #remove examples with y label 0
