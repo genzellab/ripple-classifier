@@ -18,7 +18,9 @@ import torch
 import torchvision.transforms as transforms
 
 from data_modules.ripple_module import RippleDataModule
+from models.HPC_conformer import HPC_Conformer
 from models.HPCnet import HPCnet
+from models.PFC_conformer import PFC_Conformer
 
 seed_everything(42)
 
@@ -68,6 +70,7 @@ def main(hparams, network):
         name=hparams.model_name, project=project_folder, entity=os.getenv(
             'WANDB_ENTITY'),
         offline=False)
+    wandb_logger.experiment.use_artifact(hparams.dataset_artifact + ':latest')
 
     early_stop_callback = EarlyStopping(
         monitor='val_loss',
@@ -131,14 +134,19 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', type=int, default=1)
     parser.add_argument('--nodes', type=int, default=1)
     parser.add_argument('--precision', type=int, default=16)
-    parser.add_argument('--model-name', type=str, default='model')
+    parser.add_argument('--model-name', type=str, default='conformer')
+    parser.add_argument('--dataset-artifact', type=str, default='HPC_preproc')
     parser.add_argument('--early_stop_num', type=int, default=50)
     parser.add_argument('--fixed-data', type=int, default=1,
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
     parser.add_argument('--accum_grad_batches', type=int, default=1)
-    parser.add_argument('--gradient_clip_val', type=float, default=0.809)
+    parser.add_argument('--gradient_clip_val', type=float, default=2.4)
     parser.add_argument("--max_nb_epochs", default=10000, type=int)
     parser.add_argument("--batch_size", default=128, type=int)
+
+    #data args
+    parser.add_argument('--data_type', type=str, default='PFC')
+    parser.add_argument('--lazy_load', type=int, default=1)
 
     # wandb args
     parser.add_argument('--sweep-name', type=str, default="",
@@ -146,7 +154,7 @@ if __name__ == '__main__':
 
     # model args
     parser.add_argument('--data-dir', type=str,
-                        default='./proc_data/', help='path to the data')
+                        default='proc_data/HPC_150ms', help='path to the data')
     parser.add_argument("--num_classes",
                         dest="num_classes",
                         default=2,
@@ -156,7 +164,8 @@ if __name__ == '__main__':
     # parser.add_argument("--model-type", type=str, default=os.environ['SM_HP_MODEL_TYPE'])
     parser.add_argument("--model-load-from-checkpoint", type=int, default=0)
 
-    network = HPCnet
+    
+    network = PFC_Conformer#HPC_Conformer#HPCnet##
 
     # give the module a chance to add own params
     # good practice to define LightningModule speficic params in the module

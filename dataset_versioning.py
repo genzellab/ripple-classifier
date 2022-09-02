@@ -5,19 +5,37 @@ import json
 import h5py
 run = wandb.init(project="ripple_project", job_type='dataset')
 #%%
-
-h = h5py.File('proc_data/PFC/dataset_PFCshal_ratID210.hdf5', 'r')
+#load files from directory
+import os
+data_dir = 'proc_data/HPC_150ms'
 dct = {}
-for k in h.attrs.keys():
-    if k == 'data_types': continue
-    dct[k] = h.attrs[k]
-label_arr = json.loads(h.attrs['data_types'])
-y = pd.Series(h['y']).apply(lambda x: label_arr[x])
-dct['n_complex'] = y[y.str.contains('complex')].shape[0]
-dct['n_ripple'] = y[y.str.contains('ripple')].shape[0]
-dct['n_swr'] = y[~y.str.contains('complex') & y.str.contains('swr')].shape[0]
-dct
+dct['n_complex'] = 0    
+dct['n_swr'] = 0
+dct['n_ripple'] = 0
+dct_data_index = {'filename':[],'rat_id':[],'data_idx':[],'label':[]}
+for root, dirs, files in os.walk(data_dir):
+    for file in files:
+        if not file.endswith('.hdf5'): continue
+        h = h5py.File(os.path.join(data_dir,file), 'r')
+        
+        for k in h.attrs.keys():
+            if k == 'data_types': continue
+            dct[k] = h.attrs[k]
+        label_arr = json.loads(h.attrs['data_types'])
+        y = pd.Series(h['y']).apply(lambda x: label_arr[x])
+        dct['n_complex'] += y[y.str.contains('complex')].shape[0]
+        dct['n_ripple'] += y[y.str.contains('ripple')].shape[0]
+        dct['n_swr'] += y[~y.str.contains('complex') & y.str.contains('swr')].shape[0]
+        dct_data_index['filename'].extend([file]*y.shape[0])
+        dct_data_index['rat_id'].extend([file.split('_')[2].split('.')[0][5:]]*y.shape[0])
+        dct_data_index['data_idx'].extend(range(y.shape[0]))
+        dct_data_index['label'].extend(h['y'])
+dct       
 #%%
-my_data = wandb.Artifact("PFC_preproc", type="preprocessed_data",metadata=dct)
-my_data.add_dir("proc_data/PFC")
+df = pd.DataFrame(dct_data_index).to_csv(os.path.join(data_dir,'data_index.csv'),index=False)    
+df.filename.unique()
+df
+#%%
+my_data = wandb.Artifact("HPC_preproc", type="preprocessed_data",metadata=dct)
+my_data.add_dir(data_dir)
 run.log_artifact(my_data)

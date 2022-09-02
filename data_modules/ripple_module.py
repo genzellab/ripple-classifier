@@ -24,14 +24,14 @@ class RippleDataModule(pl.LightningDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
             self.train_dataset = RippleSpectDataset(
-                self.data_dir, set_type="train", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes)
+                self.data_dir, set_type="train", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
             self.val_dataset = RippleSpectDataset(
-                self.data_dir, set_type="val", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes)
+                self.data_dir, set_type="val", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
             self.test_dataset = RippleSpectDataset(
-                self.data_dir, set_type="test", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes)
+                self.data_dir, set_type="test", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
 
         if stage == "predict" or stage is None:
             self.predict_dataset = None

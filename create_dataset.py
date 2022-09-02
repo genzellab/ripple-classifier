@@ -24,21 +24,21 @@ if __name__ == '__main__':
     parser.add_argument('--data-loc', type=str,
                         default='data/', help='File location')
     parser.add_argument('--recording-loc', type=str,
-                        default='PFC', help='Recording location')
+                        default='HPC', help='Recording location')
     parser.add_argument('--wavelet-scales-start', type=int,
-                        default=20, help='Wavelet scales start value for linspace')
+                        default=2, help='Wavelet scales start value for linspace')
     parser.add_argument('--wavelet-scales-end', type=int,
-                        default=512, help='Wavelet scales end value for linspace')
+                        default=7, help='Wavelet scales end value for linspace')
     parser.add_argument('--wavelet-scales-num', type=int,
-                        default=64, help='Wavelet scales num. samples value for linspace')
+                        default=8, help='Wavelet scales num. samples value for linspace')
     parser.add_argument('--wavelet-name', type=str,
                         default='cmor1.5-1.0', help='Wavelet name')
     parser.add_argument('--event-window-s', type=int,
-                        default=4, help='Event window size in seconds')
+                        default=0.150, help='Event window size in seconds')
     parser.add_argument('--sampling-freq', type=float,
                         default=600, help='Sampling frequency')
     parser.add_argument('--output-loc', type=str,
-                        default='proc_data/', help='Output location')
+                        default='proc_data/HPC_150ms/', help='Output location')
 
     # args = parser.parse_args()
     hparams, _ = parser.parse_known_args()
