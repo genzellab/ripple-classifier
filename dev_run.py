@@ -92,7 +92,7 @@ def main(hparams, network):
         accelerator='gpu',
         # profiler='advanced',
         weights_summary='full',
-        limit_train_batches=0.3,
+        limit_train_batches=0.4,
         # fast_dev_run=True,
     )
 
@@ -117,7 +117,6 @@ if __name__ == '__main__':
     parser.add_argument('--early_stop_num', type=int, default=500)
     parser.add_argument("--batch_size", default=64, type=int)
     #data args
-    parser.add_argument('--data_type', type=str, default='PFC')
     parser.add_argument('--lazy_load', type=int, default=1)
 
 
@@ -130,14 +129,14 @@ if __name__ == '__main__':
                         default='proc_data/PFC', help='path to the data')
     parser.add_argument("--num_classes",
                         dest="num_classes",
-                        default=2,
+                        default=3,
                         type=int)
     parser.add_argument("--fold", type=int, default=1)
 
     # parser.add_argument("--model-type", type=str, default=os.environ['SM_HP_MODEL_TYPE'])
     parser.add_argument("--model-load-from-checkpoint", type=int, default=0)
 
-    network = PFC_Conformer#HPC_Conformer#HPCnet
+    network = PFC_Conformer#PFC_Conformer#HPC_Conformer#HPCnet
 
     # give the module a chance to add own params
     # good practice to define LightningModule speficic params in the module

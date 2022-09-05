@@ -145,7 +145,6 @@ if __name__ == '__main__':
     parser.add_argument("--batch_size", default=128, type=int)
 
     #data args
-    parser.add_argument('--data_type', type=str, default='PFC')
     parser.add_argument('--lazy_load', type=int, default=1)
 
     # wandb args

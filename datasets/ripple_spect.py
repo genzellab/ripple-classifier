@@ -59,6 +59,7 @@ class RippleSpectDataset(Dataset):
             # ],
 
         }
+        print(self.data_df)
         if set_type == "train":
             self.data_df = self.data_df[~self.data_df["rat_id"].isin(
                 fold_dict[fold][0]) & ~self.data_df["rat_id"].isin(
@@ -66,8 +67,6 @@ class RippleSpectDataset(Dataset):
         elif set_type == "val":
             self.data_df = self.data_df[self.data_df["rat_id"].isin(
                 fold_dict[fold][0])]
-            print(fold_dict[fold][0])
-            print(self.data_df)
         elif set_type == "test":
             self.data_df = self.data_df[self.data_df["rat_id"].isin(
                 fold_dict[fold][1])]
@@ -78,20 +77,17 @@ class RippleSpectDataset(Dataset):
         self.data_df = self.data_df.reset_index()
         self.metadata = None
         if not lazy_load:
-
-            if data_type == "HPC":
-                self.data_df = self.data_df[self.data_df.filename.str.contains(
-                    'HPC')]
-            elif data_type == "PFC":
-                self.data_df = self.data_df[self.data_df.filename.str.contains(
-                    'PFC')]
             # get rat id
-            self.data_df['rat_id'] = self.data_df.filename.apply(
-                lambda x: int(x.split('_')[-1].split('.')[0].split('ratID')[1]))
+            if self.num_classes == 2:
+                # remove examples with y label 0
+                self.data_df = self.data_df[self.data_df.label != 0]
+                self.data_df = self.data_df.reset_index()
+                self.data_df.label[self.data_df.label == 1] = 0
+                self.data_df.label[self.data_df.label == 2] = 1
             self.X = None
             self.y = None
-            for idx, row in self.data_df.iterrows():
-                h = h5py.File(os.path.join(data_dir, row.filename), 'r')
+            for filename in self.data_df.filename.unique():
+                h = h5py.File(os.path.join(data_dir, filename), 'r')
                 if self.metadata is None:
                     self.metadata = dict(h.attrs.items())
                 data = np.array(h['x'])
@@ -104,9 +100,6 @@ class RippleSpectDataset(Dataset):
                 h.close()
             self.X = self.X.real
             if self.num_classes == 2:
-                # remove examples with y label 0
-                self.X = self.X[self.y != 0]
-                self.y = self.y[self.y != 0]
                 self.y[self.y == 1] = 0
                 self.y[self.y == 2] = 1
             print(self.X.dtype)
@@ -114,19 +107,20 @@ class RippleSpectDataset(Dataset):
                 self.X = self.X.type(torch.float)
             self.length = self.X.shape[0]
         else:
-
-            self.h_files = {}
-            for filename in self.data_df.filename.unique():
-                h = h5py.File(os.path.join(data_dir, filename), 'r')
-                if self.metadata is None:
-                    self.metadata = dict(h.attrs.items())
-                self.h_files[filename] = h
             if self.num_classes == 2:
                 # remove examples with y label 0
                 self.data_df = self.data_df[self.data_df.label != 0]
                 self.data_df = self.data_df.reset_index()
                 self.data_df.label[self.data_df.label == 1] = 0
                 self.data_df.label[self.data_df.label == 2] = 1
+            print(self.data_df)
+            self.h_files = {}
+            for filename in self.data_df.filename.unique():
+                h = h5py.File(os.path.join(data_dir, filename), 'r')
+                if self.metadata is None:
+                    self.metadata = dict(h.attrs.items())
+                self.h_files[filename] = h
+
             self.y = torch.tensor(self.data_df.label.values)
             self.length = len(self.data_df)
 
