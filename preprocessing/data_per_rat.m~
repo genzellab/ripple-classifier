@@ -1,6 +1,6 @@
 
 % SWR
-x=strcat('GC_swr_ratID214_cbd','.waveforms')
+x=strcat('GC_swr_ratID212_cbd','.waveforms')
 x=eval([x]);
 length(x)
 for i=1: length(x)
@@ -11,7 +11,7 @@ end
 
 
 % RIPPLE
-x=strcat('GC_ripple_ratID214_cbd','.waveforms')
+x=strcat('GC_ripple_ratID212_cbd','.waveforms')
 x=eval([x]);
 length(x)
 for i=1: length(x)
@@ -22,7 +22,7 @@ end
 
 
 % Complex swr
-x=strcat('GC_complex_swr_ratID214_cbd','.waveforms')
+x=strcat('GC_complex_swr_ratID212_cbd','.waveforms')
 x=eval([x]);
 length(x)
 for i=1: length(x)
@@ -33,16 +33,16 @@ end
 %%
 clearvars -except  HPCpyra_complex_swr_cbd HPCpyra_ripple_cbd HPCpyra_swr_cbd
 
-save('HPCpyra_events_ratID214')
+save('HPCpyra_events_ratID212')
 
 %% PFC shal
 clearvars -except  PFCshal_complex_swr_cbd PFCshal_ripple_cbd PFCshal_swr_cbd
 
-save('PFCshal_events_ratID214')
+save('PFCshal_events_ratID212')
 %% PFC deep
 clearvars -except  PFCdeep_complex_swr_cbd PFCdeep_ripple_cbd PFCdeep_swr_cbd
 
-save('PFCdeep_events_ratID214')
+save('PFCdeep_events_ratID212')
 
 %%
 clear variables

@@ -47,15 +47,23 @@ hold on
 e = errorbar(x,y,[SEM_ripples SEM_swr SEM_complex],'o');    
 e.Marker = '*';
 e.MarkerSize = 10;
-e.Color = 'red';
+e.Color = 'black';
+e.LineWidth=2;
 
 ylabel('Percentage of total events')
 
 title('Percentage of event type across Veh rats')
 % xlim([0 4])
-ylim([0 60])
+ylim([0 70])
 %%
+
+plotColors = jet(length(p_ripples));
 hold on
 for i=1:length(p_ripples)
-plot(x,[ p_ripples(i),p_swr(i),p_complex(i)],'o','MarkerFaceColor','k')
+%       Plot_color=cmap(i./5,:);   
+plot(x,[ p_ripples(i),p_swr(i),p_complex(i)],'-o','MarkerFaceColor','k','LineWidth',2,'Color', plotColors(i,:))
+%     ax = gca;
+%     ax.ColorOrderIndex = i;
 end
+
+legend({'a','Mean+SEM','Rat3','Rat4','Rat9','Rat201','Rat203','Rat206','Rat210','Rat211','Rat213'})
