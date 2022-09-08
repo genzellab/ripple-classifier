@@ -35,20 +35,23 @@ class PFC_Conformer(pl.LightningModule):
         self.save_hyperparameters(hparams)
         self.num_classes = self.hparams.num_classes
         self.cnn = nn.Sequential(
-            *[cnn_block(64,self.hparams.cnn_dim,3,2,0),cnn_block(self.hparams.cnn_dim,self.hparams.cnn_dim,3,2,0)])
+            *[cnn_block(64,self.hparams.pfc_cnn_dim,3,2,0),cnn_block(self.hparams.pfc_cnn_dim,self.hparams.pfc_cnn_dim,3,2,0)])
 
         self.net = torchaudio.models.Conformer(
-            input_dim=self.hparams.cnn_dim,
-            num_heads=self.hparams.num_heads,  # number of heads in multiheadattention models
-            ffn_dim=self.hparams.ffn_dim,  # dimension of feedforward network model
-            num_layers=self.hparams.num_layers,  # number of decoder layers
-            depthwise_conv_kernel_size=self.hparams.depthwise_conv_kernel_size,
-            use_group_norm=self.hparams.use_group_norm,
-            dropout=self.hparams.dropout,
-            convolution_first=self.hparams.convolution_first,
+            input_dim=self.hparams.pfc_cnn_dim,
+            num_heads=self.hparams.pfc_num_heads,  # number of heads in multiheadattention models
+            ffn_dim=self.hparams.pfc_ffn_dim,  # dimension of feedforward network model
+            num_layers=self.hparams.pfc_num_layers,  # number of decoder layers
+            depthwise_conv_kernel_size=self.hparams.pfc_depthwise_conv_kernel_size,
+            use_group_norm=self.hparams.pfc_use_group_norm,
+            dropout=self.hparams.pfc_dropout,
+            convolution_first=self.hparams.pfc_convolution_first,
 
         )
-        self.fc = nn.Linear(self.hparams.cnn_dim, self.num_classes)
+        if self.hparams.pfc_get_emb:
+            self.fc = nn.Linear(self.hparams.pfc_cnn_dim, self.hparams.pfc_emb_dim)
+        else:
+            self.fc = nn.Linear(self.hparams.pfc_cnn_dim, self.num_classes)
 
     def forward(self, x):
         x = self.cnn(x)
@@ -290,8 +293,8 @@ class PFC_Conformer(pl.LightningModule):
     def configure_optimizers(self):
         return torch.optim.AdamW(
             self.parameters(),
-            self.hparams.learning_rate,
-            weight_decay=self.hparams.weight_decay,
+            self.hparams.pfc_learning_rate,
+            weight_decay=self.hparams.pfc_weight_decay,
         )
 
     @staticmethod
@@ -299,24 +302,28 @@ class PFC_Conformer(pl.LightningModule):
         """
         Specify the hyperparams for this LightningModule
         """
-        parser = ArgumentParser(parents=[parent_parser])
+        parser = ArgumentParser(parents=[parent_parser], add_help=False)
         # Architecture params
-        parser.add_argument("--cnn_dim", default=512, type=int)
-        parser.add_argument("--num_layers", default=8, type=int)
-        parser.add_argument("--num_heads", default=8, type=int)
-        parser.add_argument("--ffn_dim", default=512, type=int)
-        parser.add_argument("--depthwise_conv_kernel_size",
+        parser.add_argument("--pfc_cnn_dim", default=256, type=int)
+        parser.add_argument("--pfc_num_layers", default=4, type=int)
+        parser.add_argument("--pfc_num_heads", default=8, type=int)
+        parser.add_argument("--pfc_ffn_dim", default=256, type=int)
+        parser.add_argument("--pfc_depthwise_conv_kernel_size",
                             default=11, type=int)
-        parser.add_argument("--use_group_norm", default=1, type=int)
-        parser.add_argument("--convolution_first", default=1, type=int)
-        parser.add_argument("--dropout", default=0.0, type=float)
+        parser.add_argument("--pfc_use_group_norm", default=1, type=int)
+        parser.add_argument("--pfc_convolution_first", default=1, type=int)
+        parser.add_argument("--pfc_dropout", default=0.0, type=float)
 
+        # Multimodal args
+        parser.add_argument("--pfc_get_emb", default=0, type=int)
+        parser.add_argument("--pfc_emb_dim", default=256, type=int)
+        
         # OPTIMIZER ARGS
-        parser.add_argument("--learning_rate", default=0.000281, type=float)
-        parser.add_argument("--weight_decay", default=0.0, type=float)
+        parser.add_argument("--pfc_learning_rate", default=0.000281, type=float)
+        parser.add_argument("--pfc_weight_decay", default=0.0, type=float)
 
         # training specific (for this model)
-        parser.add_argument("--data_type", type=str, default='PFC',
+        parser.add_argument("--pfc_data_type", type=str, default='PFC',
                             help='Possible values are PFC, all')
 
         return parser

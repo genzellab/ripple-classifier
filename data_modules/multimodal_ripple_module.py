@@ -4,19 +4,16 @@ from torch.utils.data import random_split, DataLoader
 # Note - you must have torchvision installed for this example
 from torchvision.datasets import MNIST
 from torchvision import transforms
-from datasets.ripple_spect import RippleSpectDataset
+from datasets.ripple_spect_multi import RippleSpectMultiDataset
 
 
-class RippleDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str = "./", transforms: transforms.Compose = None, num_workers: int = 4, **kwargs):
+class MultiModalRippleDataModule(pl.LightningDataModule):
+    def __init__(self, data_dir_HPC: str = "./",data_dir_PFC: str = "./", transforms: transforms.Compose = None, num_workers: int = 4, **kwargs):
         super().__init__()
         self.save_hyperparameters()
 
-        self.data_dir = data_dir
-        if 'hpc_data_type' in kwargs:
-            self.hparams.data_type = hpc_data_type
-        else:
-            self.hparams.data_type = 'PFC'
+        self.data_dir = data_dir_HPC
+        self.data_dir_PFC = data_dir_PFC
         self.transforms = transforms
 
     def prepare_data(self):
@@ -27,15 +24,15 @@ class RippleDataModule(pl.LightningDataModule):
         print(self.hparams)
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
-            self.train_dataset = RippleSpectDataset(
-                self.data_dir, set_type="train", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
-            self.val_dataset = RippleSpectDataset(
-                self.data_dir, set_type="val", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
+            self.train_dataset = RippleSpectMultiDataset(
+                self.data_dir,self.data_dir_PFC, set_type="train", transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
+            self.val_dataset = RippleSpectMultiDataset(
+                self.data_dir,self.data_dir_PFC, set_type="val", transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
-            self.test_dataset = RippleSpectDataset(
-                self.data_dir, set_type="test", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
+            self.test_dataset = RippleSpectMultiDataset (
+                self.data_dir,self.data_dir_PFC, set_type="test", transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
 
         if stage == "predict" or stage is None:
             self.predict_dataset = None

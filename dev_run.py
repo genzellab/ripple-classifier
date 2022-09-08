@@ -12,10 +12,11 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning import Trainer, seed_everything, plugins
 
 from data_modules.ripple_module import RippleDataModule
+from data_modules.multimodal_ripple_module import MultiModalRippleDataModule
 from models.HPCnet import HPCnet
 from models.HPC_conformer import HPC_Conformer
 from models.PFC_conformer import PFC_Conformer
-
+from models.Multimodal_conformer import MM_Conformer
 seed_everything(42)
 
 
@@ -97,10 +98,15 @@ def main(hparams, network):
     )
 
     transforms_comp = None
-    datamodule = RippleDataModule(
-        transforms=transforms_comp, num_workers=4, **vars(hparams))
+    if 'multi' in hparams.model_name:
+        datamodule = MultiModalRippleDataModule(
+            transforms=transforms_comp, num_workers=4, **vars(hparams))
+    else:
+        datamodule = RippleDataModule(
+            transforms=transforms_comp, num_workers=4, **vars(hparams))
     trainer.fit(model, datamodule=datamodule)
     trainer.test(dataloaders=datamodule.val_dataloader())
+
 
 if __name__ == '__main__':
     parser = ArgumentParser(add_help=False)
@@ -108,7 +114,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', type=int, default=1)
     parser.add_argument('--nodes', type=int, default=1)
     parser.add_argument('--precision', type=int, default=16)
-    parser.add_argument('--model-name', type=str, default='model_debug')
+    parser.add_argument('--model-name', type=str, default='model_debug_multi')
     parser.add_argument('--fixed-data', type=int, default=1,
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
     parser.add_argument('--accum_grad_batches', type=int, default=1)
@@ -116,9 +122,8 @@ if __name__ == '__main__':
     parser.add_argument("--max_nb_epochs", default=1000, type=int)
     parser.add_argument('--early_stop_num', type=int, default=500)
     parser.add_argument("--batch_size", default=64, type=int)
-    #data args
+    # data args
     parser.add_argument('--lazy_load', type=int, default=1)
-
 
     # wandb args
     parser.add_argument('--sweep-name', type=str, default="",
@@ -126,7 +131,12 @@ if __name__ == '__main__':
 
     # model args
     parser.add_argument('--data-dir', type=str,
-                        default='proc_data/PFC', help='path to the data')
+                        default='proc_data/PFC_128ft', help='path to the data')
+    parser.add_argument('--data-dir-HPC', type=str,
+                        default='proc_data/HPC_150ms', help='path to the data')
+    parser.add_argument('--data-dir-PFC', type=str,
+                        default='proc_data/PFC_128ft', help='path to the data')
+
     parser.add_argument("--num_classes",
                         dest="num_classes",
                         default=3,
@@ -136,7 +146,7 @@ if __name__ == '__main__':
     # parser.add_argument("--model-type", type=str, default=os.environ['SM_HP_MODEL_TYPE'])
     parser.add_argument("--model-load-from-checkpoint", type=int, default=0)
 
-    network = PFC_Conformer#PFC_Conformer#HPC_Conformer#HPCnet
+    network = MM_Conformer  # PFC_Conformer#HPC_Conformer#HPCnet
 
     # give the module a chance to add own params
     # good practice to define LightningModule speficic params in the module

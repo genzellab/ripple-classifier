@@ -27,6 +27,7 @@ class RippleSpectDataset(Dataset):
         self.num_classes = num_classes
         self.transforms = transforms
         self.lazy_load = lazy_load
+        self.data_type = data_type
         self.data_df = pd.read_csv(os.path.join(data_dir, "data_index.csv"))
         # each fold corresponds uses one rat as validation and another for testing
         fold_dict = {
@@ -67,6 +68,7 @@ class RippleSpectDataset(Dataset):
         elif set_type == "val":
             self.data_df = self.data_df[self.data_df["rat_id"].isin(
                 fold_dict[fold][0])]
+
         elif set_type == "test":
             self.data_df = self.data_df[self.data_df["rat_id"].isin(
                 fold_dict[fold][1])]
@@ -75,7 +77,10 @@ class RippleSpectDataset(Dataset):
                 data_type)]
             print(self.data_df)
         self.data_df = self.data_df.reset_index()
+        self.data_df = self.data_df.sort_values(by=['rat_id','data_idx'])
+
         self.metadata = None
+        
         if not lazy_load:
             # get rat id
             if self.num_classes == 2:
@@ -85,18 +90,18 @@ class RippleSpectDataset(Dataset):
                 self.data_df.label[self.data_df.label == 1] = 0
                 self.data_df.label[self.data_df.label == 2] = 1
             self.X = None
-            self.y = None
+            self.y = torch.tensor(self.data_df.label.values)
             for filename in self.data_df.filename.unique():
                 h = h5py.File(os.path.join(data_dir, filename), 'r')
                 if self.metadata is None:
                     self.metadata = dict(h.attrs.items())
                 data = np.array(h['x'])
-                label = np.array(h['y'])
-                print(data.shape, label.shape)
+                # label = np.array(h['y'])
+                # print(data.shape, label.shape)
                 self.X = torch.tensor(data) if self.X is None else torch.cat(
                     (self.X, torch.tensor(data)))
-                self.y = torch.tensor(label) if self.y is None else torch.cat(
-                    (self.y, torch.tensor(label)))
+                # self.y = torch.tensor(label) if self.y is None else torch.cat(
+                #     (self.y, torch.tensor(label)))
                 h.close()
             self.X = self.X.real
             if self.num_classes == 2:
@@ -137,10 +142,10 @@ class RippleSpectDataset(Dataset):
         # print(idx)
         # print(self.leng_df[idx])
         if self.lazy_load:
-            h = self.h_files[self.data_df.filename.values[idx]]
+            row = self.data_df.iloc[idx]
+            h = self.h_files[row.filename]
             data = torch.tensor(
-                np.array(h['x'][self.data_df.loc[idx].data_idx])).real
-            # data = torch.tensor(data).real
+                np.array(h['x'][row.data_idx])).real
             if data.dtype == torch.float64:
                 data = data.type(torch.float)
         else:
@@ -149,3 +154,5 @@ class RippleSpectDataset(Dataset):
             data = self.transforms(data)
         label = self.y[idx]
         return data, label
+
+# %%
