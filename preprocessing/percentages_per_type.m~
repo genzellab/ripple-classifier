@@ -92,7 +92,7 @@ model_error=[SEM_ripples SEM_ripples_cbd; SEM_swr SEM_swr_cbd; SEM_complex SEM_c
 % x = reordercats(x,{'Ripples','Ripples CBD', 'SWR','SWR CBD','cSWR','cSWR CBD'}); %specified order
 y=[mean(p_ripples) mean(p_ripples_cbd); mean(p_swr) mean(p_swr_cbd); mean(p_complex) mean(p_complex_cbd)];
 % b=bar(x,reshape(y,2,3).')
-b=bar(y,'grouped')
+b=bar(x,y,'grouped')
 hold on
 %%
 % Calculate the number of groups and number of bars in each group
@@ -116,7 +116,7 @@ title('Percentage of event type across veh rats')
 % xlim([0 4])
 ylim([0 70])
 
-%%
+
 plotColors = jet(length(p_ripples));
 hold on
 for i=1:length(p_ripples)
@@ -128,7 +128,7 @@ end
 
 for i=1:length(p_ripples_cbd)
 %       Plot_color=cmap(i./5,:);   
-plot(X(2,:).',[ p_ripples_cbd(i),p_swr_cbd(i),p_complex_cbd(i)],'o','MarkerFaceColor','k')
+plot(X(2,:).',[ p_ripples(i),p_swr(i),p_complex(i)],'o','MarkerFaceColor','k')
 %     ax = gca;
 %     ax.ColorOrderIndex = i;
 end
