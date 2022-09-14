@@ -1,0 +1,11 @@
+filename,rat_id,sizes,complex,swr,ripple
+dataset_HPCpyra_ratID214.hdf5,214,"(503, 8, 90)",126,117,260
+dataset_HPCpyra_ratID205.hdf5,205,"(759, 8, 90)",135,218,406
+dataset_HPCpyra_ratID10.hdf5,10,"(858, 8, 90)",7,791,60
+dataset_HPCpyra_ratID5.hdf5,5,"(789, 8, 90)",320,72,397
+dataset_HPCpyra_ratID2.hdf5,2,"(1376, 8, 90)",124,857,395
+dataset_HPCpyra_ratID207.hdf5,207,"(1381, 8, 90)",219,365,797
+dataset_HPCpyra_ratID209.hdf5,209,"(695, 8, 90)",126,191,378
+dataset_HPCpyra_ratID212.hdf5,212,"(988, 8, 90)",194,273,521
+dataset_HPCpyra_ratID204.hdf5,204,"(794, 8, 90)",1,772,21
+dataset_HPCpyra_ratID11.hdf5,11,"(839, 8, 90)",8,709,122

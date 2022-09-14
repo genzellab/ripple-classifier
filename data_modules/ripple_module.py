@@ -18,7 +18,7 @@ class RippleDataModule(pl.LightningDataModule):
         else:
             self.hparams.data_type = 'PFC'
         self.transforms = transforms
-        self.create_dataset = True
+        self.create_dataset = False
 
     def prepare_data(self):
         # download
@@ -28,18 +28,17 @@ class RippleDataModule(pl.LightningDataModule):
             self.create_dataset = False
 
     def setup(self, stage=None):
-        print(self.hparams)
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
             self.train_dataset = RippleSpectDataset(
-                self.data_dir, set_type="train", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
+                 set_type="train", **self.hparams)
             self.val_dataset = RippleSpectDataset(
-                self.data_dir, set_type="val", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
+                 set_type="val", **self.hparams)
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
             self.test_dataset = RippleSpectDataset(
-                self.data_dir, set_type="test", data_type=self.hparams.data_type, transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
+                 set_type="test", **self.hparams)
 
         if stage == "predict" or stage is None:
             self.predict_dataset = None

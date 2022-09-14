@@ -18,6 +18,8 @@ class RippleSpectDataset(Dataset):
                  fold=1,
                  num_classes=3,
                  lazy_load=False,
+                 exp_type='veh',
+                 **kwargs
                  ):
         """
         Args:
@@ -30,36 +32,18 @@ class RippleSpectDataset(Dataset):
         self.data_type = data_type
         self.data_df = pd.read_csv(os.path.join(data_dir, "data_index.csv"))
         # each fold corresponds uses one rat as validation and another for testing
-        fold_dict = {
-            1: [
-                [206, 210], [206, 210]  # 210
-            ],
-            # 2: [
-            #     210, 206
-            # ],
-            # 3: [
-            #     206, 3
-            # ],
-            # 4: [
-            #     3, 203
-            # ],
-            # 5: [
-            #     203, 211
-            # ],
-            # 6: [
-            #     211, 9
-            # ],
-            # 7: [
-            #     9, 213
-            # ],
-            # 8: [
-            #     213, 4
-            # ],
-            # 9: [
-            #     4, 201
-            # ],
-
-        }
+        if exp_type == 'veh':
+            fold_dict = {
+                1: [
+                    [206, 210], [206, 210]  # 210
+                ],
+            }
+        else:
+            fold_dict = {
+                1: [
+                    [214, 205], [214, 205]  # 210
+                ],
+            }
         if set_type == "train":
             self.data_df = self.data_df[~self.data_df["rat_id"].isin(
                 fold_dict[fold][0]) & ~self.data_df["rat_id"].isin(
@@ -75,13 +59,12 @@ class RippleSpectDataset(Dataset):
             min_class_count = self.data_df.label.value_counts().min()
             # get first n samples from each class
             self.data_df = self.data_df.groupby('label').head(min_class_count)
-            print(self.data_df.label.value_counts(),self.data_df)
+            print(self.data_df.label.value_counts(), self.data_df)
         if data_type != "all":
             self.data_df = self.data_df[self.data_df.filename.str.contains(
                 data_type)]
         self.data_df = self.data_df.reset_index()
         self.data_df = self.data_df.sort_values(by=['rat_id', 'data_idx'])
-
         self.metadata = None
 
         if not lazy_load:
@@ -130,7 +113,7 @@ class RippleSpectDataset(Dataset):
         self.length = len(self.data_df)
 
         print(self.length, set_type, 'fold', fold, 'label counts',
-              torch.unique(self.y, return_counts=True))
+              torch.unique(self.y, return_counts=True),'exp_type',exp_type)
 
     def __len__(self):
         return self.length
