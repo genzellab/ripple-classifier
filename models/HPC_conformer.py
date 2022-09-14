@@ -36,7 +36,7 @@ class HPC_Conformer(pl.LightningModule):
         self.num_classes = self.hparams.num_classes
 
         self.net = torchaudio.models.Conformer(
-            input_dim=8,
+            input_dim=hparams.wavelet_scales_num,
             num_heads=self.hparams.hpc_num_heads,  # number of heads in multiheadattention models
             ffn_dim=self.hparams.hpc_ffn_dim,  # dimension of feedforward network model
             num_layers=self.hparams.hpc_num_layers,  # number of decoder layers
@@ -49,7 +49,7 @@ class HPC_Conformer(pl.LightningModule):
         if self.hparams.hpc_get_emb:
             self.fc = nn.Linear(8, self.hparams.hpc_emb_dim)
         else:
-            self.fc = nn.Linear(8, self.num_classes)
+            self.fc = nn.Linear(hparams.wavelet_scales_num, self.num_classes)
 
     def forward(self, x):
         lengths = torch.full((x.shape[0],), x.shape[2], device=x.device)

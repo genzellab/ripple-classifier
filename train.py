@@ -17,12 +17,14 @@ from pytorch_lightning import Trainer, seed_everything, plugins
 import torch
 import torchvision.transforms as transforms
 
+from data_modules.multimodal_ripple_module import MultiModalRippleDataModule
 from data_modules.ripple_module import RippleDataModule
 from models.HPC_conformer import HPC_Conformer
 from models.HPCnet import HPCnet
 from models.PFC_conformer import PFC_Conformer
+from models.Multimodal_conformer import MM_Conformer
 
-seed_everything(42)
+# seed_everything(42)
 
 
 load_dotenv()
@@ -119,10 +121,14 @@ def main(hparams, network):
 
     )
     transforms_comp = None
-    datamodule = RippleDataModule(
-        transforms=transforms_comp, num_workers=4, **vars(hparams))
+    if 'multi' in hparams.model_name:
+        datamodule = MultiModalRippleDataModule(
+            transforms=transforms_comp, num_workers=4, **vars(hparams))
+    else:
+        datamodule = RippleDataModule(
+            transforms=transforms_comp, num_workers=4, **vars(hparams))
     trainer.fit(model, datamodule=datamodule)
-    trainer.test(dataloaders=datamodule.val_dataloader())
+    trainer.test(datamodule=datamodule,ckpt_path='best')
     # load best model
     # if trainer.is_global_zero and hparams.gpus == 1 and weight_avg == False:
     #     trainer.test(model)
@@ -134,17 +140,18 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', type=int, default=1)
     parser.add_argument('--nodes', type=int, default=1)
     parser.add_argument('--precision', type=int, default=16)
-    parser.add_argument('--model-name', type=str, default='conformer')
-    parser.add_argument('--dataset-artifact', type=str, default='HPC_preproc')
-    parser.add_argument('--early_stop_num', type=int, default=50)
+    parser.add_argument('--model-name', type=str,
+                        default='conformer_PFC')
+    parser.add_argument('--dataset-artifact', type=str, default='PFC_preproc')
+    parser.add_argument('--early_stop_num', type=int, default=25)
     parser.add_argument('--fixed-data', type=int, default=1,
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
     parser.add_argument('--accum_grad_batches', type=int, default=1)
     parser.add_argument('--gradient_clip_val', type=float, default=2.4)
-    parser.add_argument("--max_nb_epochs", default=10000, type=int)
-    parser.add_argument("--batch_size", default=128, type=int)
+    parser.add_argument("--max_nb_epochs", default=1000, type=int)
+    parser.add_argument("--batch_size", default=64, type=int)
 
-    #data args
+    # data args
     parser.add_argument('--lazy_load', type=int, default=1)
 
     # wandb args
@@ -153,18 +160,45 @@ if __name__ == '__main__':
 
     # model args
     parser.add_argument('--data-dir', type=str,
+                        default='proc_data/PFC_cmor10', help='path to the data')
+    parser.add_argument('--data-dir-HPC', type=str,
                         default='proc_data/HPC_150ms', help='path to the data')
+    parser.add_argument('--data-dir-PFC', type=str,
+                        default='proc_data/PFC_128ft', help='path to the data')
     parser.add_argument("--num_classes",
                         dest="num_classes",
                         default=2,
                         type=int)
     parser.add_argument("--fold", type=int, default=1)
 
+    #hpc dataset creation args
+    parser.add_argument('--wavelet-scales-num', type=int,
+                        default=64, help='Wavelet scales num. samples value for linspace')
+    # parser.add_argument('--data-loc', type=str,
+    #                     default='data/HPCpyra', help='File location')
+    # parser.add_argument('--recording-loc', type=str,
+    #                     default='HPC', help='Recording location')
+    # parser.add_argument('--wavelet-scales-start', type=int,
+    #                     default=2, help='Wavelet scales start value for linspace')
+    # parser.add_argument('--wavelet-scales-end', type=int,
+    #                     default=7, help='Wavelet scales end value for linspace')
+    # parser.add_argument('--wavelet-name', type=str,
+    #                     default='cmor', help='Wavelet name')
+    # parser.add_argument('--wavelet-b', type=float,
+    #                     default=1.5, help='Wavelet name')
+    # parser.add_argument('--wavelet-c', type=float,
+    #                     default=1.0, help='Wavelet name')
+    # parser.add_argument('--event-window-s', type=int,
+    #                     default=.150, help='Event window size in seconds')
+    # parser.add_argument('--sampling-freq', type=float,
+    #                     default=600, help='Sampling frequency')
+    # parser.add_argument('--output-loc', type=str,
+    #                     default='proc_data/HPC_TMP/', help='Output location')
+
     # parser.add_argument("--model-type", type=str, default=os.environ['SM_HP_MODEL_TYPE'])
     parser.add_argument("--model-load-from-checkpoint", type=int, default=0)
 
-    
-    network = PFC_Conformer#HPC_Conformer#HPCnet##
+    network = PFC_Conformer  # PFC_Conformer#HPC_Conformer#HPCnet##
 
     # give the module a chance to add own params
     # good practice to define LightningModule speficic params in the module
