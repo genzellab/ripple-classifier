@@ -5,7 +5,7 @@ from torch.utils.data import random_split, DataLoader
 from torchvision.datasets import MNIST
 from torchvision import transforms
 from datasets.ripple_spect import RippleSpectDataset
-
+from create_dataset import create_dataset
 
 class RippleDataModule(pl.LightningDataModule):
     def __init__(self, data_dir: str = "./", transforms: transforms.Compose = None, num_workers: int = 4, **kwargs):
@@ -14,14 +14,18 @@ class RippleDataModule(pl.LightningDataModule):
 
         self.data_dir = data_dir
         if 'hpc_data_type' in kwargs:
-            self.hparams.data_type = hpc_data_type
+            self.hparams.data_type = kwargs['hpc_data_type']
         else:
             self.hparams.data_type = 'PFC'
         self.transforms = transforms
+        self.create_dataset = True
 
     def prepare_data(self):
         # download
-        ...
+        if self.create_dataset and self.hparams.data_type == 'HPC':
+            self.hparams.wavelet_name = self.hparams.wavelet_name + str(self.hparams.wavelet_b) + '-' + str(self.hparams.wavelet_c)
+            create_dataset(self.hparams)
+            self.create_dataset = False
 
     def setup(self, stage=None):
         print(self.hparams)

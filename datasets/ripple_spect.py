@@ -60,7 +60,6 @@ class RippleSpectDataset(Dataset):
             # ],
 
         }
-        print(self.data_df)
         if set_type == "train":
             self.data_df = self.data_df[~self.data_df["rat_id"].isin(
                 fold_dict[fold][0]) & ~self.data_df["rat_id"].isin(
@@ -72,15 +71,19 @@ class RippleSpectDataset(Dataset):
         elif set_type == "test":
             self.data_df = self.data_df[self.data_df["rat_id"].isin(
                 fold_dict[fold][1])]
+            # get the number of samples in the class with the lowest number of samples
+            min_class_count = self.data_df.label.value_counts().min()
+            # get first n samples from each class
+            self.data_df = self.data_df.groupby('label').head(min_class_count)
+            print(self.data_df.label.value_counts(),self.data_df)
         if data_type != "all":
             self.data_df = self.data_df[self.data_df.filename.str.contains(
                 data_type)]
-            print(self.data_df)
         self.data_df = self.data_df.reset_index()
-        self.data_df = self.data_df.sort_values(by=['rat_id','data_idx'])
+        self.data_df = self.data_df.sort_values(by=['rat_id', 'data_idx'])
 
         self.metadata = None
-        
+
         if not lazy_load:
             # get rat id
             if self.num_classes == 2:
@@ -107,10 +110,8 @@ class RippleSpectDataset(Dataset):
             if self.num_classes == 2:
                 self.y[self.y == 1] = 0
                 self.y[self.y == 2] = 1
-            print(self.X.dtype)
             if self.X.dtype == torch.float64:
                 self.X = self.X.type(torch.float)
-            self.length = self.X.shape[0]
         else:
             if self.num_classes == 2:
                 # remove examples with y label 0
@@ -118,7 +119,6 @@ class RippleSpectDataset(Dataset):
                 self.data_df = self.data_df.reset_index()
                 self.data_df.label[self.data_df.label == 1] = 0
                 self.data_df.label[self.data_df.label == 2] = 1
-            print(self.data_df)
             self.h_files = {}
             for filename in self.data_df.filename.unique():
                 h = h5py.File(os.path.join(data_dir, filename), 'r')
@@ -127,11 +127,10 @@ class RippleSpectDataset(Dataset):
                 self.h_files[filename] = h
 
             self.y = torch.tensor(self.data_df.label.values)
-            self.length = len(self.data_df)
+        self.length = len(self.data_df)
 
         print(self.length, set_type, 'fold', fold, 'label counts',
               torch.unique(self.y, return_counts=True))
-        print(self.data_df)
 
     def __len__(self):
         return self.length

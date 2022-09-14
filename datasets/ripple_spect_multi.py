@@ -37,7 +37,7 @@ class RippleSpectMultiDataset(Dataset):
         self.length = len(self.data_df)
 
         print(self.length, set_type, 'fold', fold)
-        print(self.data_df)
+        # print(self.data_df)
 
     def __len__(self):
         return self.length
