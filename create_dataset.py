@@ -7,7 +7,7 @@ import os
 import numpy as np
 import h5py
 import json
-
+import pandas as pd
 
 def create_wavelet(signal, scales, waveletname, sampling_period):
     """
@@ -18,36 +18,12 @@ def create_wavelet(signal, scales, waveletname, sampling_period):
     return coefficients
 
 
-# %%
-if __name__ == '__main__':
-    parser = ArgumentParser(add_help=False)
-    parser.add_argument('--data-loc', type=str,
-                        default='data/', help='File location')
-    parser.add_argument('--recording-loc', type=str,
-                        default='HPC', help='Recording location')
-    parser.add_argument('--wavelet-scales-start', type=int,
-                        default=2, help='Wavelet scales start value for linspace')
-    parser.add_argument('--wavelet-scales-end', type=int,
-                        default=7, help='Wavelet scales end value for linspace')
-    parser.add_argument('--wavelet-scales-num', type=int,
-                        default=8, help='Wavelet scales num. samples value for linspace')
-    parser.add_argument('--wavelet-name', type=str,
-                        default='cmor1.5-1.0', help='Wavelet name')
-    parser.add_argument('--event-window-s', type=int,
-                        default=0.150, help='Event window size in seconds')
-    parser.add_argument('--sampling-freq', type=float,
-                        default=600, help='Sampling frequency')
-    parser.add_argument('--output-loc', type=str,
-                        default='proc_data/HPC_150ms/', help='Output location')
-
-    # args = parser.parse_args()
-    hparams, _ = parser.parse_known_args()
-
+def create_dataset(hparams):
     y_label_dict = {'complex': 0, 'swr': 1, 'ripple': 2}
+
     # check if output directory exists
     if not os.path.exists(hparams.output_loc):
         os.makedirs(hparams.output_loc)
-
     # walk through all files in data folder
     for root, dirs, files in os.walk(hparams.data_loc):
         for file in files:
@@ -97,6 +73,61 @@ if __name__ == '__main__':
                 h.attrs.update(hparams.__dict__)
                 h.attrs['data_types'] = json.dumps(data_types)
                 h.close()
+    dct = {}
+    dct['n_complex'] = 0    
+    dct['n_swr'] = 0
+    dct['n_ripple'] = 0
+    dct_data_index = {'filename':[],'rat_id':[],'data_idx':[],'label':[]}
+    for root, dirs, files in os.walk(hparams.output_loc):
+        for file in files:
+            if not file.endswith('.hdf5'): continue
+            h = h5py.File(os.path.join(hparams.output_loc,file), 'r')
+            
+            for k in h.attrs.keys():
+                if k == 'data_types': continue
+                dct[k] = h.attrs[k]
+            label_arr = json.loads(h.attrs['data_types'])
+            y = pd.Series(h['y']).apply(lambda x: label_arr[x])
+            dct['n_complex'] += y[y.str.contains('complex')].shape[0]
+            dct['n_ripple'] += y[y.str.contains('ripple')].shape[0]
+            dct['n_swr'] += y[~y.str.contains('complex') & y.str.contains('swr')].shape[0]
+            dct_data_index['filename'].extend([file]*y.shape[0])
+            dct_data_index['rat_id'].extend([file.split('_')[2].split('.')[0][5:]]*y.shape[0])
+            dct_data_index['data_idx'].extend(range(y.shape[0]))
+            dct_data_index['label'].extend(h['y'])
+    df = pd.DataFrame(dct_data_index)   
+    df.to_csv(os.path.join(hparams.output_loc,'data_index.csv'),index=False)    
+
+
+
+# %%
+if __name__ == '__main__':
+    parser = ArgumentParser(add_help=False)
+    parser.add_argument('--data-loc', type=str,
+                        default='data/PFCshal', help='File location')
+    parser.add_argument('--recording-loc', type=str,
+                        default='PFC', help='Recording location')
+    parser.add_argument('--wavelet-scales-start', type=int,
+                        default=2, help='Wavelet scales start value for linspace')
+    parser.add_argument('--wavelet-scales-end', type=int,
+                        default=512, help='Wavelet scales end value for linspace')
+    parser.add_argument('--wavelet-scales-num', type=int,
+                        default=32, help='Wavelet scales num. samples value for linspace')
+    parser.add_argument('--wavelet-name', type=str,
+                        default='cmor10.5-1.0', help='Wavelet name')
+    parser.add_argument('--event-window-s', type=int,
+                        default=2, help='Event window size in seconds')
+    parser.add_argument('--sampling-freq', type=float,
+                        default=600, help='Sampling frequency')
+    parser.add_argument('--output-loc', type=str,
+                        default='proc_data/PFC_cmor10_2s/', help='Output location')
+
+    # args = parser.parse_args()
+    hparams, _ = parser.parse_known_args()
+
+
+    create_dataset(hparams)
+
 # %%
 # print attributes
 # h = h5py.File('proc_data/dataset_HPCpyra_ratID3.hdf5', 'r')
@@ -104,4 +135,3 @@ if __name__ == '__main__':
 #     print(f"{k} => {h.attrs[k]}")
 # print(h['x'].shape)
 # h.close()
-
