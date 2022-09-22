@@ -35,7 +35,7 @@ class PFC_Conformer(pl.LightningModule):
         self.save_hyperparameters(hparams)
         self.num_classes = self.hparams.num_classes
         self.cnn = nn.Sequential(
-            *[cnn_block(self.hparams.wavelet_scales_num, self.hparams.pfc_cnn_dim, 3, 1, dropout=self.hparams.pfc_cnn_dropout/4), cnn_block(self.hparams.pfc_cnn_dim, self.hparams.pfc_cnn_dim, 3, 2, dropout=self.hparams.pfc_cnn_dropout/2),
+            *[cnn_block(self.hparams.pfc_wavelet_scales_num, self.hparams.pfc_cnn_dim, 3, 1, dropout=self.hparams.pfc_cnn_dropout/4), cnn_block(self.hparams.pfc_cnn_dim, self.hparams.pfc_cnn_dim, 3, 2, dropout=self.hparams.pfc_cnn_dropout/2),
               cnn_block(self.hparams.pfc_cnn_dim, self.hparams.pfc_cnn_dim, 3, 2, dropout=self.hparams.pfc_cnn_dropout)])
 
         self.net = torchaudio.models.Conformer(
@@ -306,16 +306,16 @@ class PFC_Conformer(pl.LightningModule):
         """
         parser = ArgumentParser(parents=[parent_parser], add_help=False)
         # Architecture params
-        parser.add_argument("--pfc_cnn_dim", default=256, type=int)
-        parser.add_argument("--pfc_num_layers", default=6, type=int)
-        parser.add_argument("--pfc_num_heads", default=4, type=int)
-        parser.add_argument("--pfc_ffn_dim", default=256, type=int)
+        parser.add_argument("--pfc_cnn_dim", default=32, type=int)
+        parser.add_argument("--pfc_num_layers", default=4, type=int)
+        parser.add_argument("--pfc_num_heads", default=8, type=int)
+        parser.add_argument("--pfc_ffn_dim", default=228, type=int)
         parser.add_argument("--pfc_depthwise_conv_kernel_size",
-                            default=11, type=int)
+                            default=61, type=int)
         parser.add_argument("--pfc_use_group_norm", default=1, type=int)
         parser.add_argument("--pfc_convolution_first", default=1, type=int)
-        parser.add_argument("--pfc_dropout", default=0.0, type=float)
-        parser.add_argument("--pfc_cnn_dropout", default=0.9, type=float)
+        parser.add_argument("--pfc_dropout", default=0.55, type=float)
+        parser.add_argument("--pfc_cnn_dropout", default=0.77, type=float)
 
         # Multimodal args
         parser.add_argument("--pfc_get_emb", default=0, type=int)

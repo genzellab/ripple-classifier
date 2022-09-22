@@ -37,8 +37,8 @@ class HPCnet(pl.LightningModule):
         kernels = [3, 6, 9, 12, 2]
         strides = [1, 1, 2, 2, 2]
         layers = []
-        layers.append(nn.BatchNorm1d(8))
-        layers.append(cnn_block(8, num_channels//2**(self.hparams.num_layers-1), kernel_size=kernels[0],
+        layers.append(nn.BatchNorm1d(self.hparams.wavelet_scales_num))
+        layers.append(cnn_block(self.hparams.wavelet_scales_num, num_channels//2**(self.hparams.num_layers-1), kernel_size=kernels[0],
                       stride=strides[0], padding=0, dropout=self.hparams.dropout))
         for i in range(1, self.hparams.num_layers):
             layer_multiplier = 2**(self.hparams.num_layers - i-1)
@@ -47,7 +47,7 @@ class HPCnet(pl.LightningModule):
                           kernels[i], stride=strides[i], dropout=self.hparams.dropout/(i+1))
             )
         self.net = nn.Sequential(*layers)
-        x_size = torch.randn(1, 8, 60)
+        x_size = torch.randn(1, self.hparams.wavelet_scales_num, 90)
         x_size = self.net(x_size)
         x_size = x_size.view(x_size.size(0), -1)
         self.fc = nn.Linear(x_size.size(1), self.num_classes)
@@ -56,7 +56,7 @@ class HPCnet(pl.LightningModule):
         # for layer in self.net:
         #     print(x.shape)
         #     x = layer(x)
-        #     print(x.shape)
+        # print(x.shape)
         x = self.net(x)
         # print(x.shape)
         x = x.view(x.size(0), -1)
@@ -305,7 +305,7 @@ class HPCnet(pl.LightningModule):
         """
         parser = ArgumentParser(parents=[parent_parser])
         # Architecture params
-        parser.add_argument("--num_layers", default=2, type=int)
+        parser.add_argument("--num_layers", default=4, type=int)
         parser.add_argument("--num_channels", default=64, type=int)
         parser.add_argument("--dropout", default=0.2, type=float)
 

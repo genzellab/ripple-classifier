@@ -30,7 +30,9 @@ class RippleSpectDataset(Dataset):
         self.transforms = transforms
         self.lazy_load = lazy_load
         self.data_type = data_type
-        self.data_df = pd.read_csv(os.path.join(data_dir, "data_index.csv"))
+        self.set_type = set_type
+        self.data_df = pd.read_csv(os.path.join(
+            data_dir, "data_index.csv")).sort_values(by=['rat_id', 'data_idx'])
         # each fold corresponds uses one rat as validation and another for testing
         if exp_type == 'veh':
             fold_dict = {
@@ -59,12 +61,10 @@ class RippleSpectDataset(Dataset):
             min_class_count = self.data_df.label.value_counts().min()
             # get first n samples from each class
             self.data_df = self.data_df.groupby('label').head(min_class_count)
-            print(self.data_df.label.value_counts(), self.data_df)
         if data_type != "all":
             self.data_df = self.data_df[self.data_df.filename.str.contains(
                 data_type)]
         self.data_df = self.data_df.reset_index()
-        self.data_df = self.data_df.sort_values(by=['rat_id', 'data_idx'])
         self.metadata = None
 
         if not lazy_load:
@@ -113,7 +113,7 @@ class RippleSpectDataset(Dataset):
         self.length = len(self.data_df)
 
         print(self.length, set_type, 'fold', fold, 'label counts',
-              torch.unique(self.y, return_counts=True),'exp_type',exp_type)
+              torch.unique(self.y, return_counts=True), 'exp_type', exp_type)
 
     def __len__(self):
         return self.length
@@ -132,7 +132,7 @@ class RippleSpectDataset(Dataset):
                 data = data.type(torch.float)
         else:
             data = self.X[idx]
-        if self.transforms is not None:
+        if self.transforms is not None and self.set_type == "train":
             data = self.transforms(data)
         label = self.y[idx]
         return data, label

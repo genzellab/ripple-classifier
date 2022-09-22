@@ -26,7 +26,7 @@ class MM_Conformer(pl.LightningModule):
 
         self.save_hyperparameters(hparams)
         self.num_classes = self.hparams.num_classes
-
+        
         self.hpc_net = HPC_Conformer(hparams)
         self.pfc_net = PFC_Conformer(hparams)
         self.fc = nn.Linear(hparams.hpc_emb_dim + hparams.pfc_emb_dim, self.num_classes)

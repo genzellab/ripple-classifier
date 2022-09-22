@@ -17,6 +17,10 @@ from models.HPCnet import HPCnet
 from models.HPC_conformer import HPC_Conformer
 from models.PFC_conformer import PFC_Conformer
 from models.Multimodal_conformer import MM_Conformer
+from models.HPC_lstm import HPC_LSTM
+
+from data_transforms.ripple_spect_trs import shift_cutoff
+from torchvision import transforms
 seed_everything(42)
 
 
@@ -96,8 +100,7 @@ def main(hparams, network):
         limit_train_batches=0.4,
         # fast_dev_run=True,
     )
-
-    transforms_comp = None
+    transforms_comp = transforms.Compose([shift_cutoff])
     if 'multi' in hparams.model_name:
         datamodule = MultiModalRippleDataModule(
             transforms=transforms_comp, num_workers=4, **vars(hparams))
@@ -115,17 +118,18 @@ if __name__ == '__main__':
     parser.add_argument('--gpus', type=int, default=1)
     parser.add_argument('--nodes', type=int, default=1)
     parser.add_argument('--precision', type=int, default=16)
-    parser.add_argument('--model-name', type=str, default='model_debug')
     parser.add_argument('--fixed-data', type=int, default=1,
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
     parser.add_argument('--accum_grad_batches', type=int, default=1)
     parser.add_argument('--gradient_clip_val', type=float, default=0.0)
-    parser.add_argument("--max_nb_epochs", default=5, type=int)
-    parser.add_argument('--early_stop_num', type=int, default=500)
+    parser.add_argument("--max_nb_epochs", default=1, type=int)
+    parser.add_argument('--early_stop_num', type=int, default=1000)
     parser.add_argument("--batch_size", default=64, type=int)
     # data args
-    parser.add_argument('--lazy_load', type=int, default=0)
+    parser.add_argument('--model-name', type=str, default='model_debug')
+    parser.add_argument('--lazy_load', type=int, default=1)
     parser.add_argument('--exp_type', type=str, default='veh')
+    parser.add_argument('--data_type', type=str, default='HPC')
 
     # wandb args
     parser.add_argument('--sweep-name', type=str, default="",
@@ -133,11 +137,11 @@ if __name__ == '__main__':
 
     # model args
     parser.add_argument('--data-dir', type=str,
-                        default='proc_data/PCA_HPC_PROC', help='path to the data')
+                        default='proc_data/VEH_HPC_PCA_180ms', help='path to the data')
     parser.add_argument('--data-dir-HPC', type=str,
-                        default='proc_data/HPC_150ms', help='path to the data')
+                        default='proc_data/PCA_HPC_PROC', help='path to the data')
     parser.add_argument('--data-dir-PFC', type=str,
-                        default='proc_data/PFC_128ft', help='path to the data')
+                        default='proc_data/PFC_cmor10', help='path to the data')
 
     parser.add_argument("--num_classes",
                         dest="num_classes",
@@ -145,10 +149,12 @@ if __name__ == '__main__':
                         type=int)
     parser.add_argument("--fold", type=int, default=1)
 
-
-    #hpc dataset creation args
-    parser.add_argument('--wavelet-scales-num', type=int,
+    parser.add_argument('--hpc-wavelet-scales-num', type=int,
                         default=8, help='Wavelet scales num. samples value for linspace')
+    parser.add_argument('--pfc-wavelet-scales-num', type=int,
+                        default=64, help='Wavelet scales num. samples value for linspace')
+    #hpc dataset creation args
+
     # parser.add_argument('--data-loc', type=str,
     #                     default='data/PFCshal', help='File location')
     # parser.add_argument('--recording-loc', type=str,
@@ -173,7 +179,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--model-load-from-checkpoint", type=int, default=0)
 
-    network = HPC_Conformer  # PFC_Conformer#HPC_Conformer#HPCnet
+    network = HPC_Conformer #MM_Conformer  # PFC_Conformer#HPC_Conformer#HPCnet
 
     # give the module a chance to add own params
     # good practice to define LightningModule speficic params in the module
@@ -183,6 +189,8 @@ if __name__ == '__main__':
     print(os.getcwd())
 
     hparams, _ = parser.parse_known_args()
-
+    if 'multi' in hparams.model_name:
+        hparams.pfc_get_emb = 1
+        hparams.hpc_get_emb = 1
     print(hparams)
     main(hparams, network)

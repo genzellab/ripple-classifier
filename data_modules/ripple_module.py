@@ -13,10 +13,6 @@ class RippleDataModule(pl.LightningDataModule):
         self.save_hyperparameters()
 
         self.data_dir = data_dir
-        if 'hpc_data_type' in kwargs:
-            self.hparams.data_type = kwargs['hpc_data_type']
-        else:
-            self.hparams.data_type = 'PFC'
         self.transforms = transforms
         self.create_dataset = False
 
@@ -37,6 +33,9 @@ class RippleDataModule(pl.LightningDataModule):
 
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
+            #uncomment to use cbd dataset as test set
+            # self.hparams.exp_type = 'cbd'
+            # self.hparams.data_dir = 'proc_data/PFC_CBD'
             self.test_dataset = RippleSpectDataset(
                  set_type="test", **self.hparams)
 

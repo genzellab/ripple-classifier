@@ -18,6 +18,8 @@ class RippleSpectMultiDataset(Dataset):
                  fold=1,
                  num_classes=3,
                  lazy_load=False,
+                exp_type='veh',
+                 **kwargs
                  ):
         """
         Args:
@@ -28,8 +30,8 @@ class RippleSpectMultiDataset(Dataset):
         self.num_classes = num_classes
         self.transforms = transforms
         self.lazy_load = lazy_load
-        self.hpc_dataset = RippleSpectDataset(data_dir_HPC, set_type, "HPC", transforms, fold, num_classes, lazy_load)
-        self.pfc_dataset = RippleSpectDataset(data_dir_PFC, set_type, "PFC", transforms, fold, num_classes, lazy_load)
+        self.hpc_dataset = RippleSpectDataset(data_dir_HPC, set_type, "HPC", transforms, fold, num_classes, lazy_load,exp_type)
+        self.pfc_dataset = RippleSpectDataset(data_dir_PFC, set_type, "PFC", transforms, fold, num_classes, lazy_load,exp_type)
         
         self.data_df = self.hpc_dataset.data_df
         #check if the dataframes are the same
@@ -49,5 +51,3 @@ class RippleSpectMultiDataset(Dataset):
         pfc_data, _ = self.pfc_dataset[idx]
 
         return (hpc_data,pfc_data), label
-
-# %%
