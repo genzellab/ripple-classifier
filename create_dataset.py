@@ -96,42 +96,54 @@ def create_dataset(hparams):
             dct_data_index['data_idx'].extend(range(y.shape[0]))
             dct_data_index['label'].extend(h['y'])
     df = pd.DataFrame(dct_data_index)   
+    #append time bin information to veh
+    df['time_bin'] = [0]*df.shape[0]
+    rat_id = df['rat_id'].unique()
+    for r in rat_id:
+        mat_bins = loadmat(os.path.join('data/VEH_TIMEBINS/GC_ratID'+r+'_veh.mat'))
+        print(r,mat_bins['cr'].shape, df.loc[df[(df.rat_id==r) & (df.label==0)].index,'time_bin'])
+        df.loc[df[(df.rat_id==r) & (df.label==0)].index,'time_bin'] = mat_bins['cr'].flatten()
+        df.loc[df[(df.rat_id==r) & (df.label==1)].index,'time_bin'] = mat_bins['swr'].flatten()
+        df.loc[df[(df.rat_id==r) & (df.label==2)].index,'time_bin'] = mat_bins['r'].flatten()
+
     df.to_csv(os.path.join(hparams.output_loc,'data_index.csv'),index=False)    
 
 
-
-# %%
 if __name__ == '__main__':
     parser = ArgumentParser(add_help=False)
     parser.add_argument('--data-loc', type=str,
-                        default='data/PFCshal', help='File location')
+                        default='data/VEH_HPCpyra', help='File location')
     parser.add_argument('--recording-loc', type=str,
-                        default='PFC', help='Recording location')
+                        default='HPC', help='Recording location')
     parser.add_argument('--wavelet-scales-start', type=int,
                         default=2, help='Wavelet scales start value for linspace')
     parser.add_argument('--wavelet-scales-end', type=int,
-                        default=512, help='Wavelet scales end value for linspace')
+                        default=7, help='Wavelet scales end value for linspace')
     parser.add_argument('--wavelet-scales-num', type=int,
-                        default=32, help='Wavelet scales num. samples value for linspace')
+                        default=8, help='Wavelet scales num. samples value for linspace')
     parser.add_argument('--wavelet-name', type=str,
-                        default='cmor10.5-1.0', help='Wavelet name')
+                        default='cmor1.5-1.0', help='Wavelet name')
     parser.add_argument('--event-window-s', type=int,
-                        default=2, help='Event window size in seconds')
+                        default=0.180, help='Event window size in seconds')
     parser.add_argument('--sampling-freq', type=float,
                         default=600, help='Sampling frequency')
     parser.add_argument('--output-loc', type=str,
-                        default='proc_data/PFC_cmor10_2s/', help='Output location')
+                        default='proc_data/VEH_HPC_180ms/', help='Output location')
 
     # args = parser.parse_args()
     hparams, _ = parser.parse_known_args()
-
-
     create_dataset(hparams)
 
 # %%
-# print attributes
-# h = h5py.File('proc_data/dataset_HPCpyra_ratID3.hdf5', 'r')
+h = h5py.File('proc_data/VEH_HPC_PCA_180ms/dataset_HPCpyra_ratID3.hdf5', 'r')
 # for k in h.attrs.keys():
 #     print(f"{k} => {h.attrs[k]}")
 # print(h['x'].shape)
 # h.close()
+
+# %%
+import torch
+ts = torch.tensor(h['x'][1]).real
+ts[:,ts.shape[0]//2]
+# %%
+pd.DataFrame(ts.roll(1,1))
