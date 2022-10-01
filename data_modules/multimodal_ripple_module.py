@@ -8,7 +8,7 @@ from datasets.ripple_spect_multi import RippleSpectMultiDataset
 
 
 class MultiModalRippleDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir_HPC: str = "./",data_dir_PFC: str = "./", transforms: transforms.Compose = None, num_workers: int = 4, **kwargs):
+    def __init__(self, data_dir_HPC: str = "./", data_dir_PFC: str = "./", transforms: transforms.Compose = None, num_workers: int = 4, **kwargs):
         super().__init__()
         self.save_hyperparameters()
 
@@ -25,15 +25,13 @@ class MultiModalRippleDataModule(pl.LightningDataModule):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit" or stage is None:
             self.train_dataset = RippleSpectMultiDataset(
-                self.data_dir,self.data_dir_PFC, set_type="train", transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
+                set_type="train", **self.hparams)
             self.val_dataset = RippleSpectMultiDataset(
-                self.data_dir,self.data_dir_PFC, set_type="val", transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
-
+                set_type="val", **self.hparams)
         # Assign test dataset for use in dataloader(s)
         if stage == "test" or stage is None:
-            self.test_dataset = RippleSpectMultiDataset (
-                self.data_dir,self.data_dir_PFC, set_type="test", transforms=self.transforms, fold=self.hparams.fold, num_classes=self.hparams.num_classes, lazy_load=self.hparams.lazy_load)
-
+            self.test_dataset = RippleSpectMultiDataset(
+                set_type="test", **self.hparams)
         if stage == "predict" or stage is None:
             self.predict_dataset = None
 

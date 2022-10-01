@@ -11,52 +11,47 @@ import pandas as pd
 from torchmetrics.functional import f1_score
 import torchmetrics
 import torchaudio
+from perceiver_pytorch import Perceiver
 
-
-class cnn_block(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dropout=0.0):
-        super(cnn_block, self).__init__()
-        self.conv = nn.Conv1d(in_channels, out_channels,
-                              kernel_size, stride, padding)
-        self.bn = nn.BatchNorm1d(out_channels)
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self, x):
-        return self.dropout(self.relu(self.bn(self.conv(x))))
-
-
-class HPC_Conformer(pl.LightningModule):
+class HPC_Perceiver(pl.LightningModule):
     def __init__(self, hparams):
-        super(HPC_Conformer, self).__init__()
+        super(HPC_Perceiver, self).__init__()
         # if not isinstance(hparams, Namespace):
         #     hparams = dotdict(hparams)
 
         self.save_hyperparameters(hparams)
         self.num_classes = self.hparams.num_classes
         print('model',hparams)
-        self.net = torchaudio.models.Conformer(
-            input_dim=hparams.hpc_wavelet_scales_num,
-            num_heads=self.hparams.hpc_num_heads,  # number of heads in multiheadattention models
-            ffn_dim=self.hparams.hpc_ffn_dim,  # dimension of feedforward network model
-            num_layers=self.hparams.hpc_num_layers,  # number of decoder layers
-            depthwise_conv_kernel_size=self.hparams.hpc_depthwise_conv_kernel_size,
-            use_group_norm=self.hparams.hpc_use_group_norm,
-            dropout=self.hparams.hpc_dropout,
-            convolution_first=self.hparams.hpc_convolution_first,
 
-        )
-        if self.hparams.hpc_get_emb:
-            self.fc = nn.Linear(8, self.hparams.hpc_emb_dim)
-        else:
-            self.fc = nn.Linear(hparams.hpc_wavelet_scales_num, self.num_classes)
+        self.net = Perceiver(
+                    input_channels = hparams.hpc_wavelet_scales_num,          # number of channels for each token of the input
+                    input_axis = 1,              # number of axis for input data (2 for images, 3 for video)
+                    num_freq_bands = hparams.hpc_num_freq_bands,          # number of freq bands, with original value (2 * K + 1)
+                    max_freq = hparams.hpc_max_freq,              # maximum frequency, hyperparameter depending on how fine the data is
+                    depth = hparams.hpc_depth,                   # depth of net. The shape of the final attention mechanism will be:
+                                                #   depth * (cross attention -> self_per_cross_attn * self attention)
+                    num_latents = hparams.hpc_num_latents,           # number of latents, or induced set points, or centroids. different papers giving it different names
+                    latent_dim = hparams.hpc_latent_dim,            # latent dimension
+                    cross_heads = hparams.hpc_cross_heads,             # number of heads for cross attention. paper said 1
+                    latent_heads = hparams.hpc_latent_heads,            # number of heads for latent self attention, 8
+                    cross_dim_head = hparams.hpc_cross_dim_head,         # number of dimensions per cross attention head
+                    latent_dim_head = hparams.hpc_latent_dim_head,        # number of dimensions per latent self attention head
+                    num_classes = self.num_classes,          # output number of classes
+                    attn_dropout = hparams.hpc_attn_dropout,
+                    ff_dropout = hparams.hpc_ff_dropout,
+                    weight_tie_layers = False,   # whether to weight tie layers (optional, as indicated in the diagram)
+                    fourier_encode_data = True,  # whether to auto-fourier encode the data, using the input_axis given. defaults to True, but can be turned off if you are fourier encoding the data yourself
+                    self_per_cross_attn = hparams.hpc_self_per_cross_attn      # number of self attention blocks per cross attention
+                )
+        # if self.hparams.hpc_get_emb:
+        #     self.fc = nn.Linear(8, self.hparams.hpc_emb_dim)
+        # else:
+        #     self.fc = nn.Linear(hparams.hpc_wavelet_scales_num, self.num_classes)
 
     def forward(self, x):
-        lengths = torch.full((x.shape[0],), x.shape[2], device=x.device)
         x = x.permute(0, 2, 1)
-        x = self.net(x, lengths)[0]
-        x = x[:, 0, :]
-        return self.fc(x)
+        x = self.net(x)
+        return x
 
     def training_step(self, batch, batch_idx):
         # REQUIRED
@@ -301,14 +296,18 @@ class HPC_Conformer(pl.LightningModule):
         """
         parser = ArgumentParser(parents=[parent_parser], add_help=False)        
         # Architecture params
-        parser.add_argument("--hpc_num_layers", default=6, type=int)
-        parser.add_argument("--hpc_num_heads", default=8, type=int)
-        parser.add_argument("--hpc_ffn_dim", default=300, type=int)
-        parser.add_argument("--hpc_depthwise_conv_kernel_size",
-                            default=11, type=int)
-        parser.add_argument("--hpc_use_group_norm", default=1, type=int)
-        parser.add_argument("--hpc_convolution_first", default=1, type=int)
-        parser.add_argument("--hpc_dropout", default=0.2, type=float)
+        parser.add_argument("--hpc_num_freq_bands", default=7, type=int)
+        parser.add_argument("--hpc_max_freq", default=5, type=int)
+        parser.add_argument("--hpc_depth", default=5, type=int)
+        parser.add_argument("--hpc_num_latents", default=255, type=int)
+        parser.add_argument("--hpc_latent_dim", default=513, type=int)
+        parser.add_argument("--hpc_cross_heads", default=3, type=int)
+        parser.add_argument("--hpc_latent_heads", default=5, type=int)
+        parser.add_argument("--hpc_cross_dim_head", default=65, type=int)
+        parser.add_argument("--hpc_latent_dim_head", default=511, type=int)
+        parser.add_argument("--hpc_attn_dropout", default=0.2, type=float)
+        parser.add_argument("--hpc_ff_dropout", default=0.2, type=float)
+        parser.add_argument("--hpc_self_per_cross_attn", default=3, type=int)
 
         # Multimodal args
         parser.add_argument("--hpc_get_emb", default=0, type=int)

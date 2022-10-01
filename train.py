@@ -23,8 +23,11 @@ from models.HPC_conformer import HPC_Conformer
 from models.HPCnet import HPCnet
 from models.PFC_conformer import PFC_Conformer
 from models.Multimodal_conformer import MM_Conformer
+from models.HPC_perceiver import HPC_Perceiver
 
-# seed_everything(42)
+from data_transforms.ripple_spect_trs import SpectShiftCutoff
+from torchvision import transforms
+seed_everything(42)
 
 
 load_dotenv()
@@ -117,10 +120,12 @@ def main(hparams, network):
         auto_select_gpus=True,
         accumulate_grad_batches=hparams.accum_grad_batches,
         gradient_clip_val=hparams.gradient_clip_val,
+        weights_summary='full',
 
 
     )
-    transforms_comp = None
+    transforms_comp = None#transforms.Compose([SpectShiftCutoff(max_shift_s=hparams.max_shift_s)])
+
     if 'multi' in hparams.model_name.lower():
         datamodule = MultiModalRippleDataModule(
             transforms=transforms_comp, num_workers=4, **vars(hparams))
@@ -141,9 +146,9 @@ if __name__ == '__main__':
     parser.add_argument('--nodes', type=int, default=1)
     parser.add_argument('--precision', type=int, default=16)
     parser.add_argument('--model-name', type=str,
-                        default='conformer_multimodal')
+                        default='conformer')
     parser.add_argument('--dataset-artifact', type=str,
-                        default='PFC_CBD_preproc')
+                        default='HPC_PCA_preproc')
     parser.add_argument('--early_stop_num', type=int, default=25)
     parser.add_argument('--fixed-data', type=int, default=1,
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
@@ -151,11 +156,12 @@ if __name__ == '__main__':
     parser.add_argument('--gradient_clip_val', type=float, default=2.4)
     parser.add_argument("--max_nb_epochs", default=1000, type=int)
     parser.add_argument("--batch_size", default=64, type=int)
+    parser.add_argument("--max_shift_s", default=0.015, type=float)
 
     # data args
-    parser.add_argument('--lazy_load', type=int, default=1)
+    parser.add_argument('--lazy_load', type=int, default=0)
     parser.add_argument('--exp_type', type=str, default='veh')
-    parser.add_argument('--data_type', type=str, default='PFC')
+    parser.add_argument('--data_type', type=str, default='HPC')
     parser.add_argument('--hpc-wavelet-scales-num', type=int,
                         default=8, help='Wavelet scales num. samples value for linspace')
     parser.add_argument('--pfc-wavelet-scales-num', type=int,
@@ -166,7 +172,7 @@ if __name__ == '__main__':
 
     # model args
     parser.add_argument('--data-dir', type=str,
-                        default='proc_data/PFC_cmor10', help='path to the data')
+                        default='proc_data/HPC_150ms', help='path to the data')
     parser.add_argument('--data-dir-HPC', type=str,
                         default='proc_data/PCA_HPC_PROC', help='path to the data')
     parser.add_argument('--data-dir-PFC', type=str,
@@ -203,7 +209,7 @@ if __name__ == '__main__':
     # parser.add_argument("--model-type", type=str, default=os.environ['SM_HP_MODEL_TYPE'])
     parser.add_argument("--model-load-from-checkpoint", type=int, default=0)
 
-    network = MM_Conformer  # PFC_Conformer#HPC_Conformer#HPCnet##
+    network = HPC_Conformer#HPC_Perceiver  # PFC_Conformer#HPC_Conformer#HPCnet##
 
     # give the module a chance to add own params
     # good practice to define LightningModule speficic params in the module
@@ -218,3 +224,5 @@ if __name__ == '__main__':
         hparams.hpc_get_emb = 1
     print(hparams)
     main(hparams, network)
+
+# %%
