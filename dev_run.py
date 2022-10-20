@@ -18,8 +18,9 @@ from models.HPC_conformer import HPC_Conformer
 from models.PFC_conformer import PFC_Conformer
 from models.Multimodal_conformer import MM_Conformer
 from models.HPC_lstm import HPC_LSTM
+from models.HPC_perceiver import HPC_Perceiver
 
-from data_transforms.ripple_spect_trs import shift_cutoff
+from data_transforms.ripple_spect_trs import SpectShiftCutoff
 from torchvision import transforms
 seed_everything(42)
 
@@ -100,14 +101,13 @@ def main(hparams, network):
         limit_train_batches=0.4,
         # fast_dev_run=True,
     )
-    transforms_comp = transforms.Compose([shift_cutoff])
+    transforms_comp = transforms.Compose([SpectShiftCutoff(max_shift_s=hparams.max_shift_s)])
     if 'multi' in hparams.model_name:
         datamodule = MultiModalRippleDataModule(
             transforms=transforms_comp, num_workers=4, **vars(hparams))
     else:
         datamodule = RippleDataModule(
             transforms=transforms_comp, num_workers=4, **vars(hparams))
-
     trainer.fit(model, datamodule=datamodule)
     trainer.test(datamodule=datamodule)
 
@@ -123,13 +123,14 @@ if __name__ == '__main__':
     parser.add_argument('--accum_grad_batches', type=int, default=1)
     parser.add_argument('--gradient_clip_val', type=float, default=0.0)
     parser.add_argument("--max_nb_epochs", default=1, type=int)
-    parser.add_argument('--early_stop_num', type=int, default=1000)
+    parser.add_argument('--early_stop_num', type=int, default=10)
     parser.add_argument("--batch_size", default=64, type=int)
     # data args
     parser.add_argument('--model-name', type=str, default='model_debug')
-    parser.add_argument('--lazy_load', type=int, default=1)
+    parser.add_argument('--lazy_load', type=int, default=0)
     parser.add_argument('--exp_type', type=str, default='veh')
     parser.add_argument('--data_type', type=str, default='HPC')
+    parser.add_argument("--max_shift_s", default=0.0, type=float)
 
     # wandb args
     parser.add_argument('--sweep-name', type=str, default="",
@@ -179,7 +180,7 @@ if __name__ == '__main__':
 
     parser.add_argument("--model-load-from-checkpoint", type=int, default=0)
 
-    network = HPC_Conformer #MM_Conformer  # PFC_Conformer#HPC_Conformer#HPCnet
+    network = HPC_Perceiver#HPC_Perceiver #MM_Conformer  # PFC_Conformer#HPC_Conformer#HPCnet
 
     # give the module a chance to add own params
     # good practice to define LightningModule speficic params in the module

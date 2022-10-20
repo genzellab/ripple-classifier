@@ -7,7 +7,7 @@ run = wandb.init(project="ripple_project", job_type='dataset')
 #%%
 #load files from directory
 import os
-data_dir = 'proc_data/PFC_cmor10'#'proc_data/PFC_128ft'
+data_dir = 'proc_data/VEH_HPC_PCA_180ms'#'proc_data/PFC_128ft'
 dct = {}
 dct['n_complex'] = 0    
 dct['n_swr'] = 0
@@ -36,6 +36,6 @@ df = pd.DataFrame(dct_data_index)
 df.to_csv(os.path.join(data_dir,'data_index.csv'),index=False)    
 
 #%%
-my_data = wandb.Artifact("PFC_preproc", type="preprocessed_data",metadata=dct)
+my_data = wandb.Artifact("HPC_PCA_preproc", type="preprocessed_data",metadata=dct)
 my_data.add_dir(data_dir)
 run.log_artifact(my_data)
