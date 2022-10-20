@@ -27,3 +27,19 @@ class SpectShiftCutoff(object):
 
     def __repr__(self):
         return self.__class__.__name__ + '(signal_size={0}, cutoff={1})'.format(self.signal_size, self.max_shift_s)
+class PadRawData(object):
+    """Copy and pad the raw data to match the spectrogram size.
+    Args:
+        output_dim (int): the output dimension of the data
+    """
+
+    def __init__(self, output_dim=8):
+        self.output_dim = output_dim
+
+    def __call__(self, x):
+        x = x.repeat(self.output_dim,1)
+        return x
+
+    def __repr__(self):
+        return self.__class__.__name__ + '(signal_size={0}, cutoff={1})'.format(self.signal_size, self.max_shift_s)
+

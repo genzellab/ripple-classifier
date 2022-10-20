@@ -132,7 +132,7 @@ class RippleSpectDataset(Dataset):
                 data = data.type(torch.float)
         else:
             data = self.X[idx]
-        if self.transforms is not None and self.set_type == "train":
+        if self.transforms is not None:
             data = self.transforms(data)
         label = self.y[idx]
         return data, label
