@@ -12,18 +12,6 @@ import pandas as pd
 from torchmetrics.functional import f1_score
 import torchmetrics
 import torchaudio
-model = torchaudio.models.Conformer(8,2,512,2,11)
-#%%
-for m in model.modules():
-    if isinstance(m, nn.Conv1d):
-        print(m.weight.shape)
-        print(m.bias.shape)
-        print(m.weight)
-        print(m.bias)
-        break
-    print(m)
-#%%
-
 
 class cnn_block(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dropout=0.0):
@@ -327,12 +315,12 @@ class HPC_Conformer(pl.LightningModule):
         # Architecture params
         parser.add_argument("--hpc_num_layers", default=6, type=int)
         parser.add_argument("--hpc_num_heads", default=4, type=int)
-        parser.add_argument("--hpc_ffn_dim", default=256, type=int)
+        parser.add_argument("--hpc_ffn_dim", default=300, type=int)
         parser.add_argument("--hpc_depthwise_conv_kernel_size",
                             default=11, type=int)
         parser.add_argument("--hpc_use_group_norm", default=1, type=int)
         parser.add_argument("--hpc_convolution_first", default=1, type=int)
-        parser.add_argument("--hpc_dropout", default=0.0, type=float)
+        parser.add_argument("--hpc_dropout", default=0.2, type=float)
 
         # Multimodal args
         parser.add_argument("--hpc_get_emb", default=0, type=int)
@@ -340,7 +328,7 @@ class HPC_Conformer(pl.LightningModule):
 
         # OPTIMIZER ARGS
         parser.add_argument("--hpc_learning_rate", default=0.000281, type=float)
-        parser.add_argument("--hpc_weight_decay", default=0.0008, type=float)
+        parser.add_argument("--hpc_weight_decay", default=0.008, type=float)
 
         # training specific (for this model)
         parser.add_argument("--hpc_data-type", type=str, default='HPC',
