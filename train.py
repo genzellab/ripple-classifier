@@ -25,11 +25,13 @@ from models.PFC_conformer import PFC_Conformer
 from models.Multimodal_conformer import MM_Conformer
 from models.HPC_perceiver import HPC_Perceiver
 
-from data_transforms.ripple_spect_trs import SpectShiftCutoff
+from data_transforms.ripple_spect_trs import SpectShiftCutoff, PadRawData
 from torchvision import transforms
 seed_everything(42)
 
-
+from pl_bolts.datamodules import CIFAR10DataModule
+from pl_bolts.transforms.dataset_normalizations import cifar10_normalization
+import torchvision
 load_dotenv()
 
 # os.system('wandb login {}'.format(os.getenv('WANDB_API_KEY')))
@@ -124,7 +126,7 @@ def main(hparams, network):
 
 
     )
-    transforms_comp = None#transforms.Compose([SpectShiftCutoff(max_shift_s=hparams.max_shift_s)])
+    transforms_comp = None#transforms.Compose([PadRawData()])#transforms.Compose([SpectShiftCutoff(max_shift_s=hparams.max_shift_s)])
 
     if 'multi' in hparams.model_name.lower():
         datamodule = MultiModalRippleDataModule(
@@ -132,6 +134,30 @@ def main(hparams, network):
     else:
         datamodule = RippleDataModule(
             transforms=transforms_comp, num_workers=4, **vars(hparams))
+    # train_transforms = torchvision.transforms.Compose(
+    # [
+    #     torchvision.transforms.RandomCrop(32, padding=4),
+    #     torchvision.transforms.RandomHorizontalFlip(),
+    #     torchvision.transforms.ToTensor(),
+    #     cifar10_normalization(),
+    # ]
+    # )
+
+    # test_transforms = torchvision.transforms.Compose(
+    #     [
+    #         torchvision.transforms.ToTensor(),
+    #         cifar10_normalization(),
+    #     ]
+    # )
+
+    # datamodule = CIFAR10DataModule(
+    #     data_dir='./proc_data/cifar10',
+    #     batch_size=64,
+    #     num_workers=4,
+    #     train_transforms=train_transforms,
+    #     test_transforms=test_transforms,
+    #     val_transforms=test_transforms,
+    # )
     trainer.fit(model, datamodule=datamodule)
     trainer.test(datamodule=datamodule, ckpt_path='best')
     # load best model
@@ -148,22 +174,25 @@ if __name__ == '__main__':
     parser.add_argument('--model-name', type=str,
                         default='conformer')
     parser.add_argument('--dataset-artifact', type=str,
-                        default='HPC_PCA_preproc')
-    parser.add_argument('--early_stop_num', type=int, default=25)
+                        default='HPCbelo_preproc')
+    parser.add_argument('--early_stop_num', type=int, default=100)
     parser.add_argument('--fixed-data', type=int, default=1,
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
     parser.add_argument('--accum_grad_batches', type=int, default=1)
     parser.add_argument('--gradient_clip_val', type=float, default=2.4)
-    parser.add_argument("--max_nb_epochs", default=1000, type=int)
+    parser.add_argument("--max_nb_epochs", default=2000, type=int)
     parser.add_argument("--batch_size", default=64, type=int)
     parser.add_argument("--max_shift_s", default=0.015, type=float)
 
     # data args
+    # parser.add_argument('--timebins', type=int, default=1)
+
     parser.add_argument('--lazy_load', type=int, default=0)
     parser.add_argument('--exp_type', type=str, default='veh')
-    parser.add_argument('--data_type', type=str, default='HPC')
+    parser.add_argument('--data_type', type=str, default='HPCbelo')
     parser.add_argument('--hpc-wavelet-scales-num', type=int,
-                        default=8, help='Wavelet scales num. samples value for linspace')
+                        default=32, help='Wavelet scales num. samples value for linspace')
+
     parser.add_argument('--pfc-wavelet-scales-num', type=int,
                         default=64, help='Wavelet scales num. samples value for linspace')
     # wandb args
@@ -172,7 +201,7 @@ if __name__ == '__main__':
 
     # model args
     parser.add_argument('--data-dir', type=str,
-                        default='proc_data/HPC_150ms', help='path to the data')
+                        default='proc_data/HPC_VEH_BELO', help='path to the data')
     parser.add_argument('--data-dir-HPC', type=str,
                         default='proc_data/PCA_HPC_PROC', help='path to the data')
     parser.add_argument('--data-dir-PFC', type=str,

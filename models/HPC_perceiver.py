@@ -50,6 +50,7 @@ class HPC_Perceiver(pl.LightningModule):
 
     def forward(self, x):
         x = x.permute(0, 2, 1)
+        # print(x.shape)      
         x = self.net(x)
         return x
 
@@ -296,26 +297,26 @@ class HPC_Perceiver(pl.LightningModule):
         """
         parser = ArgumentParser(parents=[parent_parser], add_help=False)        
         # Architecture params
-        parser.add_argument("--hpc_num_freq_bands", default=7, type=int)
-        parser.add_argument("--hpc_max_freq", default=5, type=int)
-        parser.add_argument("--hpc_depth", default=5, type=int)
-        parser.add_argument("--hpc_num_latents", default=255, type=int)
-        parser.add_argument("--hpc_latent_dim", default=513, type=int)
-        parser.add_argument("--hpc_cross_heads", default=3, type=int)
-        parser.add_argument("--hpc_latent_heads", default=5, type=int)
-        parser.add_argument("--hpc_cross_dim_head", default=65, type=int)
-        parser.add_argument("--hpc_latent_dim_head", default=511, type=int)
-        parser.add_argument("--hpc_attn_dropout", default=0.2, type=float)
-        parser.add_argument("--hpc_ff_dropout", default=0.2, type=float)
-        parser.add_argument("--hpc_self_per_cross_attn", default=3, type=int)
+        parser.add_argument("--hpc_num_freq_bands", default=6, type=int)
+        parser.add_argument("--hpc_max_freq", default=10, type=int)
+        parser.add_argument("--hpc_depth", default=6, type=int) 
+        parser.add_argument("--hpc_num_latents", default=32, type=int)
+        parser.add_argument("--hpc_latent_dim", default=128, type=int)
+        parser.add_argument("--hpc_cross_heads", default=1, type=int)
+        parser.add_argument("--hpc_latent_heads", default=2, type=int)
+        parser.add_argument("--hpc_cross_dim_head", default=8, type=int)
+        parser.add_argument("--hpc_latent_dim_head", default=8, type=int)
+        parser.add_argument("--hpc_attn_dropout", default=0., type=float)
+        parser.add_argument("--hpc_ff_dropout", default=0., type=float)
+        parser.add_argument("--hpc_self_per_cross_attn", default=1, type=int)
 
         # Multimodal args
         parser.add_argument("--hpc_get_emb", default=0, type=int)
         parser.add_argument("--hpc_emb_dim", default=256, type=int)
 
         # OPTIMIZER ARGS
-        parser.add_argument("--hpc_learning_rate", default=0.000281, type=float)
-        parser.add_argument("--hpc_weight_decay", default=0.008, type=float)
+        parser.add_argument("--hpc_learning_rate", default=1e-3, type=float)
+        parser.add_argument("--hpc_weight_decay", default=1e-2, type=float)
 
         # training specific (for this model)
         parser.add_argument("--hpc_data-type", type=str, default='HPC',

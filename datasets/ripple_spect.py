@@ -46,6 +46,10 @@ class RippleSpectDataset(Dataset):
                     [214, 205], [214, 205]  # 210
                 ],
             }
+        #
+        # REMOVE RATS ID 10 AND 204 FROM CBD
+        #
+        #
         if set_type == "train":
             self.data_df = self.data_df[~self.data_df["rat_id"].isin(
                 fold_dict[fold][0]) & ~self.data_df["rat_id"].isin(
@@ -61,9 +65,17 @@ class RippleSpectDataset(Dataset):
             min_class_count = self.data_df.label.value_counts().min()
             # get first n samples from each class
             self.data_df = self.data_df.groupby('label').head(min_class_count)
-        if data_type != "all":
-            self.data_df = self.data_df[self.data_df.filename.str.contains(
-                data_type)]
+        # if data_type != "all":
+        #     self.data_df = self.data_df[self.data_df.filename.str.contains(
+        #         data_type)]
+        if 'timebins' in kwargs:
+            if kwargs['timebins'] == 0:
+                self.data_df = self.data_df[self.data_df['timebins'].isin([1,2,3,4,5])]
+            else:
+                self.data_df = self.data_df[self.data_df['timebins'].isin([6,7,8,9,10])]
+            print('timebins',self.data_df.timebins.value_counts())
+            
+
         self.data_df = self.data_df.reset_index()
         self.metadata = None
 
@@ -89,7 +101,9 @@ class RippleSpectDataset(Dataset):
                 # self.y = torch.tensor(label) if self.y is None else torch.cat(
                 #     (self.y, torch.tensor(label)))
                 h.close()
-            self.X = self.X.real
+            #check if data is complex
+            if self.X.dtype == torch.complex64:
+                self.X = self.X.real
             if self.num_classes == 2:
                 self.y[self.y == 1] = 0
                 self.y[self.y == 2] = 1

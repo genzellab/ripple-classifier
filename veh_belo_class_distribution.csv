@@ -1,0 +1,10 @@
+filename,rat_id,sizes,complex,swr,sw
+dataset_ratID4_HPCbelo.hdf5,4,"(864, 32, 108)",291,230,343
+dataset_ratID210_HPCbelo.hdf5,210,"(740, 32, 108)",80,409,251
+dataset_ratID201_HPCbelo.hdf5,201,"(3624, 32, 108)",167,446,3011
+dataset_ratID211_HPCbelo.hdf5,211,"(1583, 32, 108)",276,488,819
+dataset_ratID9_HPCbelo.hdf5,9,"(2610, 32, 108)",179,881,1550
+dataset_ratID206_HPCbelo.hdf5,206,"(3310, 32, 108)",354,558,2398
+dataset_ratID3_HPCbelo.hdf5,3,"(561, 32, 108)",51,130,380
+dataset_ratID203_HPCbelo.hdf5,203,"(1462, 32, 108)",262,488,712
+dataset_ratID213_HPCbelo.hdf5,213,"(744, 32, 108)",107,139,498
