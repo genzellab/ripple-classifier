@@ -180,7 +180,7 @@ def create_dataset_mat_format(hparams):
         dct['n_ripple'] = 0
     else:
         dct['n_sw'] = 0
-    dct_data_index = {'filename':[],'rat_id':[],'data_idx':[],'label':[]}
+    dct_data_index = {'filename':[],'rat_id':[],'data_idx':[],'label':[],'data_idx_label':[]}
     for root, dirs, files in os.walk(hparams.output_loc):
         for file in files:
             if not file.endswith('.hdf5'): continue
@@ -202,6 +202,19 @@ def create_dataset_mat_format(hparams):
             dct_data_index['rat_id'].extend([file.split('_')[1][5:]]*y.shape[0])
             dct_data_index['data_idx'].extend(range(y.shape[0]))
             dct_data_index['label'].extend(h['y'])
+            flg_idx = 0
+            y_idx = []
+
+            for i in range(y.shape[0]):
+                if i == 0:
+                    y_idx.append(flg_idx)
+                elif y.iloc[i] != y.iloc[i-1]:
+                    flg_idx = 0
+                    y_idx.append(flg_idx)
+                else:
+                    flg_idx += 1
+                    y_idx.append(flg_idx)
+            dct_data_index['data_idx_label'].extend(y_idx)
     df = pd.DataFrame(dct_data_index)   
     # #append time bin information to veh
     # df['timebins'] = [0]*df.shape[0]
@@ -341,14 +354,89 @@ if __name__ == '__main__':
     # create_raw_dataset(hparams)
 
 # %%
-data_mat = loadmat('data/VEH_FEATURES_MULTI/GC_ratID3_veh.mat')
-data_mat.keys()
+event_window_s=6
+sampling_freq=600    
+data_df = None
+output_loc = 'proc_data/labeling_data/'
+data_loc = 'data/VEH_FEATURES_FINAL'
+if not os.path.exists(output_loc):
+    os.makedirs(output_loc)
+for root, dirs, files in os.walk(data_loc):
+    for file in files:
+        if file.endswith('.mat'):
+            data_mat = loadmat(os.path.join(root,file))
+            print(file)
+            for k in data_mat.keys():
+                if k.startswith('__') or len(k) < 10: continue
+                print(k)
+                arr = np.array(data_mat[k]['waveforms'][0,0].ravel().tolist())
+                if data_df is None:
+                    data_df = pd.DataFrame([[k] * len(arr),list(range(len(arr)))]).T
+                    idx_df = 0
+                else:
+                    idx_df = data_df.index[-1] + 1
+                    data_df = pd.concat([data_df,pd.DataFrame([[k] * len(arr),list(range(len(arr)))]).T],ignore_index=True)
+                for i in range(arr.shape[0]):
+                    df =pd.DataFrame(arr[i]).T
+                    df.columns = ['pfcshallow','hpcpyra_filt','hpcbelo_filt','pfcdeep','hpcpyra_raw','hpcbelo_raw']
+                    df['time'] = np.linspace(0, event_window_s, arr.shape[2])
+                    df.to_csv(os.path.join(output_loc,str(idx_df + i) +'_id.csv'),index=False)
+                print(idx_df)
+data_df.columns = ['filename','data_idx']
+data_df.to_csv(os.path.join(output_loc,'data_index.csv'))
 #%%
-data_mat['GC_swr_ratID3_veh']['HPCpyra_trace'][0,0].shape#['waveforms'][0,0].ravel().tolist())[:,2,:]
+data_df
+
+#%%
+                        
+# data_mat = loadmat('/home/ricardo/Downloads/GC_ratID3_veh_waveforms.mat')#'data/VEH_FEATURES_MULTI/GC_ratID3_veh.mat')
+data_mat = loadmat('data/VEH_FEATURES_MULTI/GC_ratID3_veh.mat')
+print(data_mat.keys())
+arr = np.array(data_mat['GC_sw_ratID3_veh']['waveforms'][0,0].ravel().tolist())
+# arr = np.stack([data_mat['waveforms']['cswr'][0,0]['belo'][0,0],data_mat['waveforms']['cswr'][0,0]['pyr'][0,0]])
+# #change dimension order
+# arr = np.moveaxis(arr,0,1)
+
+#%%
+df =pd.DataFrame(arr[0]).T
+df.columns = ['pfcshallow','hpcpyra','hpcbelo','pfcdeep']
+df['time'] = np.linspace(0, event_window_s, data_seq.shape[2])
+df.to_csv('data_labeling/ratid3_sw.csv',index=False)
+#%%
+# data_mat['GC_complex_swr_ratID3_veh']['waveforms']['sw']
+data = arr
+event_window_s=6
+sampling_freq=600
+data_length = data.shape[2]
+data_seq = data[:,:, int(data_length/2 -
+                event_window_s/2*sampling_freq):int(data_length/2 + event_window_s/2*sampling_freq) +1]
+time = np.linspace(-event_window_s/2, event_window_s/2, data_seq.shape[2])
+time.shape
+# time = time2
+#%%
+idx = 0
+# plt.plot(arr[idx,0,:])
+figure = plt.figure(figsize=(10, 10))
+axis = plt.gca()
+axis.plot(time,data[idx,1,:]*10,linewidth = 0.5)
+axis.plot(time,data[idx,2,:])
+plt.ylim([-1000,1000])
+plt.xlim([-0.15,0.15])
+plt.vlines(0,-3000,3000,'k',linewidth = 0.1,linestyles='-')
+# axis.set_ylim([-data_seq[idx,2,:].max()/2,data_seq[idx,2,:].max()/2])
+# axis.set_xlim([-0.5,0.5])
+# plt.vlines(0,-1000,1000,'k',linewidth = 0.1,linestyles='-')
+# plt.plot(arr[idx,3,:])
+#%%
+data_mat2 = loadmat('data/VEH_FEATURES_MULTI/GC_ratID3_veh.mat')
+data_mat2.keys()
+arr2 = np.array(data_mat['GC_complex_swr_ratID3_veh']['waveforms'][0,0].ravel().tolist())
+#%%
+# data_mat['GC_swr_ratID3_veh']['HPCpyra_trace'][0,0].shape#['waveforms'][0,0].ravel().tolist())[:,2,:]
 
 
 
-# h = h5py.File('proc_data/VEH_HPC_PCA_180ms/dataset_HPCpyra_ratID3.hdf5', 'r')
+# h = h5py.File('proc_data/HPC_VEH_PYRA/dataset_ratID3_HPCpyra.hdf5', 'r')
 # for k in h.attrs.keys():
 #     print(f"{k} => {h.attrs[k]}")
 # print(h['x'].shape)
@@ -366,3 +454,57 @@ data_mat['GC_swr_ratID3_veh']['HPCpyra_trace'][0,0].shape#['waveforms'][0,0].rav
 
 # # %%
 # f['x'].shape#.keys()
+#%%
+import scipy.io as sio
+
+rat_ID_veh = [3,4,9,201,203,206,210,211,213]
+rat_ID_cbd= [2,5,10,11,204,205,207,209,212,214]
+data_path= '/home/ricardo/Downloads/'
+
+rat_number = 0
+data_file = 'GC_ratID' + str(rat_ID_veh[rat_number]) + '_veh_waveforms.mat'
+data = sio.loadmat(data_path + data_file)
+
+sw_belo = data['waveforms']['sw'][0,0]['belo'][0,0]
+sw_pyr = data['waveforms']['sw'][0,0]['pyr'][0,0]
+
+r_belo = data['waveforms']['r'][0,0]['belo'][0,0]
+r_pyr = data['waveforms']['r'][0,0]['pyr'][0,0]
+
+swr_belo = data['waveforms']['swr'][0,0]['belo'][0,0]
+swr_pyr = data['waveforms']['swr'][0,0]['pyr'][0,0]
+
+cswr_belo = data['waveforms']['cswr'][0,0]['belo'][0,0]
+cswr_pyr = data['waveforms']['cswr'][0,0]['pyr'][0,0]
+
+data_file_duration = 'GC_ratID' + str(rat_ID_veh[rat_number]) + '_veh.mat'
+duration = sio.loadmat(data_path + data_file_duration)
+# %%
+sf = 600
+time2 = (np.arange(0,3601) - 3600/2 )/sf
+N = int(np.sqrt(sw_belo.shape[0]))
+figure, axes = plt.subplots(2, 2)
+if N >= 10:
+    for i in range(1):
+        for j in range(1):
+            index = i*10+j
+            axes[i,j].plot(time2, sw_belo[index, :], 'r', linewidth = 0.5)
+            axes[i,j].plot(time2, sw_pyr[index, :] * 10, 'b', linewidth = 0.5)
+            axes[i,j].set_ylim([-1000,1000])
+            axes[i,j].set_xlim([-0.15,0.15])
+            axes[i,j].vlines(0,-3000,3000,'k',linewidth = 0.1,linestyles='-')
+            axes[i,j].set_xticks([])
+            axes[i,j].set_yticks([])
+            #axes[i,j].set_aspect('equal')
+plt.subplots_adjust(wspace=0, hspace=0)
+figure.set_size_inches([10,10])
+plt.show()
+#%%
+index = 0
+plt.plot(time2, sw_belo[index, :], 'r', linewidth = 0.5)
+plt.plot(time2, sw_pyr[index, :] * 10, 'b', linewidth = 0.5)
+plt.ylim([-1000,1000])
+plt.xlim([-0.15,0.15])
+plt.vlines(0,-3000,3000,'k',linewidth = 0.1,linestyles='-')
+#%%
+(sw_pyr[index, :] == arr[0,1,:]).all()

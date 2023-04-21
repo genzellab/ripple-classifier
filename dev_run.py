@@ -113,7 +113,7 @@ def main(hparams, network):
         datamodule = RippleDataModule(
             transforms=transforms_comp, num_workers=4, **vars(hparams))
     trainer.fit(model, datamodule=datamodule)
-    # trainer.test(datamodule=datamodule)
+    trainer.test(datamodule=datamodule)
 
 
 if __name__ == '__main__':
@@ -126,7 +126,7 @@ if __name__ == '__main__':
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
     parser.add_argument('--accum_grad_batches', type=int, default=1)
     parser.add_argument('--gradient_clip_val', type=float, default=0.0)
-    parser.add_argument("--max_nb_epochs", default=1000, type=int)
+    parser.add_argument("--max_nb_epochs", default=1, type=int)
     parser.add_argument('--early_stop_num', type=int, default=1000)
     parser.add_argument("--batch_size", default=64, type=int)
     # data args

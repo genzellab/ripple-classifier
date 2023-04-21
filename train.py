@@ -180,7 +180,7 @@ if __name__ == '__main__':
                         help='if 1, use fixed data can increase the speed of your system if your input sizes dont change.')
     parser.add_argument('--accum_grad_batches', type=int, default=1)
     parser.add_argument('--gradient_clip_val', type=float, default=2.4)
-    parser.add_argument("--max_nb_epochs", default=2000, type=int)
+    parser.add_argument("--max_nb_epochs", default=600, type=int)
     parser.add_argument("--batch_size", default=64, type=int)
     parser.add_argument("--max_shift_s", default=0.015, type=float)
 
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                         dest="num_classes",
                         default=3,
                         type=int)
-    parser.add_argument("--fold", type=int, default=1)
+    parser.add_argument("--fold", type=int, default=4)
 
     # hpc dataset creation args
 
