@@ -1,3 +1,3 @@
 ## Pipeline (In Order)
 
-<a href="url"><img src="https://github.com/pelinozsezer/ripple-classifier/blob/main/preprocessing/6_by_3601_data/pipeline2.png" height="768" width="890" ></a>
+<a href="url"><img src="https://github.com/pelinozsezer/ripple-classifier/blob/main/preprocessing/6_by_3601_data/pipeline2.png" height="600" width="850" ></a>
